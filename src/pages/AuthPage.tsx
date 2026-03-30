@@ -8,8 +8,8 @@ import { AlertCircle } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
 export function AuthPage() {
-  const [email, setEmail] = useState(import.meta.env.VITE_ADMIN_EMAIL || '');
-  const [password, setPassword] = useState(import.meta.env.VITE_ADMIN_PASSWORD || '');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);

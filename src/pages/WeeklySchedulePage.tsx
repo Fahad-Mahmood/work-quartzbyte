@@ -3,6 +3,7 @@ import { startOfWeek, addDays, format } from "date-fns";
 import { Button } from "@/src/components/ui/button";
 import { Plus, Share, Filter, ChevronLeft, ChevronRight, Edit, Clock, CheckCircle, AlertCircle, PlayCircle, Download, BarChart2 } from "lucide-react";
 import { useSchedule, Category, Status, Task } from "@/src/context/ScheduleContext";
+import { useUserProfile } from "@/src/context/ProfileContext";
 import { cn } from "@/src/lib/utils";
 import { TaskDrawer } from "@/src/components/TaskDrawer";
 
@@ -11,6 +12,7 @@ const STATUSES: Status[] = ['Completed', 'In Progress', 'Pending', 'Overdue'];
 
 export function WeeklySchedulePage() {
   const { schedule, getTasksForDate, isLoading } = useSchedule();
+  const { profile } = useUserProfile();
   const today = new Date();
   const start = startOfWeek(today, { weekStartsOn: 1 }); // Monday start
 
@@ -77,6 +79,19 @@ export function WeeklySchedulePage() {
     }
   };
 
+  const calcHours = (tasks: Task[]) => {
+    const total = tasks.reduce((sum, t) => {
+      const parts = t.time.split(' - ');
+      if (parts.length !== 2) return sum;
+      const [sh, sm] = parts[0].split(':').map(Number);
+      const [eh, em] = parts[1].split(':').map(Number);
+      return sum + Math.max(0, (eh * 60 + em) - (sh * 60 + sm));
+    }, 0);
+    const h = Math.floor(total / 60);
+    const m = total % 60;
+    return m > 0 ? `${h}.${Math.round(m * 10 / 60)}h` : `${h}h`;
+  };
+
   const getStatusIcon = (status: Status) => {
     switch (status) {
       case 'Completed': return <CheckCircle className="h-3 w-3" />;
@@ -87,12 +102,40 @@ export function WeeklySchedulePage() {
     }
   };
 
-  // Calculate total hours (mock calculation for now based on tasks)
   const totalTasks = weekDays.flatMap(day => getTasksForDate(day.id));
-  const filteredTasks = totalTasks.filter(t => 
+  const filteredTasks = totalTasks.filter(t =>
     (filterCategory === 'All' || t.category === filterCategory) &&
     (filterStatus === 'All Statuses' || t.status === filterStatus)
   );
+
+  // Real insight calculations
+  const parseMinutes = (time: string) => {
+    const parts = time.split(' - ');
+    if (parts.length !== 2) return 0;
+    const [sh, sm] = parts[0].split(':').map(Number);
+    const [eh, em] = parts[1].split(':').map(Number);
+    return Math.max(0, (eh * 60 + em) - (sh * 60 + sm));
+  };
+
+  const totalMinutes = filteredTasks.reduce((sum, t) => sum + parseMinutes(t.time), 0);
+  const totalHoursDisplay = totalMinutes % 60 === 0
+    ? `${totalMinutes / 60}`
+    : (totalMinutes / 60).toFixed(1);
+
+  // Top category by total minutes
+  const categoryMinutes: Record<string, number> = {};
+  filteredTasks.forEach(t => {
+    categoryMinutes[t.category] = (categoryMinutes[t.category] ?? 0) + parseMinutes(t.time);
+  });
+  const topCategory = Object.entries(categoryMinutes).sort((a, b) => b[1] - a[1])[0];
+  const topCategoryName  = topCategory?.[0] ?? '—';
+  const topCategoryHours = topCategory ? (topCategory[1] / 60).toFixed(1) : '0';
+
+  // Efficiency = completed / total (all week, unfiltered)
+  const completedCount = totalTasks.filter(t => t.status === 'Completed').length;
+  const efficiencyRate  = totalTasks.length > 0
+    ? Math.round((completedCount / totalTasks.length) * 100)
+    : 0;
 
   return (
     <div className="flex flex-col gap-8 max-w-[1400px] mx-auto animate-in fade-in duration-500 pb-20">
@@ -100,15 +143,15 @@ export function WeeklySchedulePage() {
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
         <div className="flex items-center gap-6">
           <div className="relative">
-            <div className="w-14 h-14 rounded-2xl bg-slate-200 flex items-center justify-center text-xl font-bold text-slate-500 ring-4 ring-primary-fixed/30">
-              MA
+            <div className="w-14 h-14 rounded-2xl bg-primary/10 flex items-center justify-center text-xl font-bold text-primary ring-4 ring-primary-fixed/30">
+              {(profile?.full_name || '?').split(' ').map((w: string) => w[0]).join('').slice(0, 2).toUpperCase()}
             </div>
             <div className="absolute -bottom-1 -right-1 bg-green-500 w-4 h-4 rounded-full border-2 border-white"></div>
           </div>
           <div>
             <div className="flex items-center gap-2 mb-1">
               <h2 className="text-3xl font-headline font-extrabold text-on-surface tracking-tight">Weekly Schedule</h2>
-              <span className="bg-primary-fixed text-on-primary-fixed-variant px-2.5 py-0.5 rounded-lg text-[10px] font-bold tracking-widest uppercase">Muhammad Aman</span>
+              <span className="bg-primary-fixed text-on-primary-fixed-variant px-2.5 py-0.5 rounded-lg text-[10px] font-bold tracking-widest uppercase">{profile?.full_name || 'My Schedule'}</span>
             </div>
             <div className="flex items-center gap-4">
               <div className="flex items-center gap-1 text-on-surface-variant bg-surface-container px-2 py-1 rounded-md">
@@ -191,7 +234,7 @@ export function WeeklySchedulePage() {
                   <p className="text-[10px] text-on-surface-variant uppercase font-bold tracking-widest">{format(new Date(day.id), 'MMM d')}</p>
                 </div>
                 <span className="text-[10px] bg-primary/5 text-primary px-2 py-0.5 rounded font-bold">
-                  {dayTasks.length * 2}h
+                  {calcHours(dayTasks)}
                 </span>
               </div>
               <div className="flex flex-col gap-4">
@@ -300,17 +343,17 @@ export function WeeklySchedulePage() {
         <div className="bg-primary text-white p-8 rounded-2xl relative overflow-hidden group shadow-xl shadow-primary/20">
           <div className="absolute top-0 right-0 w-32 h-32 bg-white/5 rounded-full -mr-10 -mt-10 group-hover:scale-110 transition-transform"></div>
           <span className="text-[10px] font-bold uppercase tracking-[0.2em] opacity-60">Total Hours</span>
-          <p className="text-5xl font-headline font-extrabold mt-4">{filteredTasks.length * 2}.5</p>
+          <p className="text-5xl font-headline font-extrabold mt-4">{totalHoursDisplay}</p>
           <p className="text-sm mt-2 opacity-80">Scheduled for this week</p>
         </div>
         <div className="bg-surface-container-lowest p-8 rounded-2xl shadow-sm flex flex-col justify-between border border-outline-variant/10">
           <div>
-            <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-on-surface-variant">Top Task</span>
-            <p className="text-2xl font-headline font-bold text-on-surface mt-4">Recording</p>
+            <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-on-surface-variant">Top Category</span>
+            <p className="text-2xl font-headline font-bold text-on-surface mt-4">{topCategoryName}</p>
           </div>
           <div className="flex items-center gap-2 mt-4 text-primary font-bold text-sm">
             <BarChart2 className="h-5 w-5" />
-            12 Hours Total
+            {topCategoryHours} Hours Total
           </div>
         </div>
         <div className="bg-surface-container-lowest p-8 rounded-2xl shadow-sm border border-outline-variant/10 flex flex-col justify-center items-center text-center">
@@ -318,7 +361,7 @@ export function WeeklySchedulePage() {
             <CheckCircle className="h-8 w-8 text-on-surface-variant" />
           </div>
           <p className="text-on-surface-variant text-xs font-semibold uppercase tracking-widest">Efficiency Rating</p>
-          <p className="text-3xl font-headline font-extrabold text-on-surface mt-1">94%</p>
+          <p className="text-3xl font-headline font-extrabold text-on-surface mt-1">{efficiencyRate}%</p>
         </div>
       </div>
 
