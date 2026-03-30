@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { usePageTitle } from "@/src/hooks/usePageTitle";
 import { startOfWeek, addDays, addWeeks, format } from "date-fns";
 import { Button } from "@/src/components/ui/button";
 import { Plus, Share, Filter, ChevronLeft, ChevronRight, Edit, Clock, CheckCircle, AlertCircle, PlayCircle, Download, BarChart2, Copy } from "lucide-react";
@@ -11,7 +12,8 @@ const CATEGORIES: Category[] = ['Recording', 'Cold Calling', 'Learning', 'Intern
 const STATUSES: Status[] = ['Completed', 'In Progress', 'Pending', 'Overdue'];
 
 export function WeeklySchedulePage() {
-  const { schedule, getTasksForDate, addTask, isLoading } = useSchedule();
+  usePageTitle('Weekly Plan');
+  const { getTasksForDate, addTask, isLoading } = useSchedule();
   const { profile } = useUserProfile();
   const today = new Date();
 

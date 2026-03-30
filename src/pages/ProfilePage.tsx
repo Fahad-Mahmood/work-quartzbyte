@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { User, Lock, Shield, CheckCircle, Upload } from 'lucide-react';
+import { usePageTitle } from '@/src/hooks/usePageTitle';
 import { supabase } from '@/src/lib/supabase';
 import { useAuth } from '@/src/context/AuthContext';
 import { cn } from '@/src/lib/utils';
@@ -11,6 +12,7 @@ interface Profile {
 }
 
 export function ProfilePage() {
+  usePageTitle('Settings');
   const { user } = useAuth();
   const fileInputRef = useRef<HTMLInputElement>(null);
 

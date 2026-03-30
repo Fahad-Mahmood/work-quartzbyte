@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
+import { usePageTitle } from '@/src/hooks/usePageTitle';
 import { Card, CardContent } from '@/src/components/ui/card';
 import { Calendar, Video, ArrowRight, Clock, CheckCircle, CalendarDays } from 'lucide-react';
 import { supabase } from '@/src/lib/supabase';
@@ -30,6 +31,7 @@ function getGreeting(): string {
 }
 
 export function DashboardPage() {
+  usePageTitle('Dashboard');
   const { user } = useAuth();
   const [stats, setStats]       = useState<DashboardStats>({ tasksToday: 0, hoursLoggedToday: 0, completionRate: 0 });
   const [firstName, setFirstName] = useState<string>('');

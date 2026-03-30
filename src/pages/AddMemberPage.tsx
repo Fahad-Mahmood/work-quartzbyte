@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Navigate } from 'react-router-dom';
+import { usePageTitle } from '@/src/hooks/usePageTitle';
 import { ShieldCheck, User, Info, CheckCircle } from 'lucide-react';
 import { supabase } from '@/src/lib/supabase';
 import { useAuth } from '@/src/context/AuthContext';
@@ -10,6 +11,7 @@ import { cn } from '@/src/lib/utils';
 type Role = 'admin' | 'member';
 
 export function AddMemberPage() {
+  usePageTitle('Add Member');
   const { user } = useAuth();
   const { isAdmin, isLoading: profileLoading } = useUserProfile();
 

@@ -1,0 +1,21 @@
+{
+  "name": "WORK OS — Quartzbyte Internal Ops",
+  "short_name": "WORK OS",
+  "description": "Quartzbyte's internal operations hub — weekly scheduling, daily task logging, and team management.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#000666",
+  "icons": [
+    {
+      "src": "/favicon-32.png",
+      "sizes": "32x32",
+      "type": "image/png"
+    },
+    {
+      "src": "/apple-touch-icon.png",
+      "sizes": "180x180",
+      "type": "image/png"
+    }
+  ]
+}

@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { usePageTitle } from "../hooks/usePageTitle";
 import { Card, CardContent } from "../components/ui/card";
 import { Input } from "../components/ui/input";
 import { Button } from "../components/ui/button";
@@ -7,6 +8,7 @@ import { CheckCircle2, FileText, Video, Link as LinkIcon, UploadCloud, Edit3, Ey
 import { cn } from "../lib/utils";
 
 export function VideoTrackerPage() {
+  usePageTitle('Video Tracker');
   const [takes, setTakes] = useState([{ id: 1, scene: "", take: "", notes: "", date: "", approved: false }]);
 
   const addTake = () => {
