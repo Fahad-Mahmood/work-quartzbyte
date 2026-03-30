@@ -9,6 +9,7 @@ export interface UserProfile {
   job_title: string;
   avatar_url: string | null;
   role: UserRole;
+  email: string;
 }
 
 interface ProfileContextType {
@@ -37,15 +38,22 @@ export const ProfileProvider: React.FC<{ children: React.ReactNode }> = ({ child
     setIsLoading(true);
     const { data } = await supabase
       .from('work_profiles')
-      .select('full_name, job_title, avatar_url, role')
+      .select('full_name, job_title, avatar_url, role, email')
       .eq('user_id', user.id)
       .maybeSingle();
+
+    // Keep email in sync with auth email
+    const authEmail = user.email ?? '';
+    if (data && !data.email && authEmail) {
+      await supabase.from('work_profiles').update({ email: authEmail }).eq('user_id', user.id);
+    }
 
     setProfile(data ? {
       full_name:  data.full_name  ?? '',
       job_title:  data.job_title  ?? '',
       avatar_url: data.avatar_url ?? null,
       role:       data.role === 'admin' ? 'admin' : 'member',
+      email:      data.email ?? authEmail,
     } : null);
     setIsLoading(false);
   }, [user]);

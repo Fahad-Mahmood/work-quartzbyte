@@ -7,6 +7,7 @@ import { ProfilePage } from "./pages/ProfilePage";
 import { DashboardPage } from "./pages/DashboardPage";
 import { AuthPage } from "./pages/AuthPage";
 import { AddMemberPage } from "./pages/AddMemberPage";
+import { TeamPage } from "./pages/TeamPage";
 import { ScheduleProvider } from "./context/ScheduleContext";
 import { AuthProvider } from "./context/AuthContext";
 import { ProfileProvider } from "./context/ProfileContext";
@@ -26,6 +27,7 @@ export default function App() {
               <Route path="daily-log" element={<DailyLogPage />} />
               <Route path="video-tracker" element={<VideoTrackerPage />} />
               <Route path="settings" element={<ProfilePage />} />
+              <Route path="team" element={<TeamPage />} />
               <Route path="add-member" element={<AddMemberPage />} />
             </Route>
           </Routes>

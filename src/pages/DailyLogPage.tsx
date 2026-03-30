@@ -321,7 +321,7 @@ export function DailyLogPage() {
                 className="px-5 py-2 bg-on-surface text-surface text-sm font-bold rounded-xl hover:opacity-90 transition-all shadow-md disabled:opacity-50 flex items-center gap-2"
               >
                 <Save className="h-4 w-4" />
-                {isSaving ? "Saving…" : "Submit Final Log"}
+                {isSaving ? "Saving…" : "Save Log"}
               </button>
             </div>
           </div>
