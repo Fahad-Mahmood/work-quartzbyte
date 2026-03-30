@@ -3,6 +3,7 @@ import { Layout } from "./components/Layout";
 import { DailyLogPage } from "./pages/DailyLogPage";
 import { WeeklySchedulePage } from "./pages/WeeklySchedulePage";
 import { VideoTrackerPage } from "./pages/VideoTrackerPage";
+import { VideoPipelinePage } from "./pages/VideoPipelinePage";
 import { ProfilePage } from "./pages/ProfilePage";
 import { DashboardPage } from "./pages/DashboardPage";
 import { AuthPage } from "./pages/AuthPage";
@@ -25,7 +26,8 @@ export default function App() {
               <Route index element={<DashboardPage />} />
               <Route path="weekly-plan" element={<WeeklySchedulePage />} />
               <Route path="daily-log" element={<DailyLogPage />} />
-              <Route path="video-tracker" element={<VideoTrackerPage />} />
+              <Route path="video-tracker" element={<VideoPipelinePage />} />
+              <Route path="video-tracker/:id" element={<VideoTrackerPage />} />
               <Route path="settings" element={<ProfilePage />} />
               <Route path="team" element={<TeamPage />} />
               <Route path="add-member" element={<AddMemberPage />} />

@@ -30,7 +30,7 @@ export function Layout() {
     { name: "Dashboard",    href: "/",            icon: LayoutDashboard },
     { name: "Weekly Plan",  href: "/weekly-plan", icon: CalendarDays },
     { name: "Daily Log",    href: "/daily-log",   icon: Calendar },
-    { name: "Video Tracker",href: "/video-tracker",icon: Video },
+    { name: "Video Pipeline", href: "/video-tracker", icon: Video },
     { name: "Team",         href: "/team",        icon: Users },
   ];
 
