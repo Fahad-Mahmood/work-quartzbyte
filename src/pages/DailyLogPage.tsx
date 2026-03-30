@@ -24,6 +24,99 @@ function parsePlannedMins(time: string): number {
   return Math.max(0, (eh * 60 + em) - (sh * 60 + sm));
 }
 
+interface TaskRowProps {
+  task: { id: string; name: string; category: string; time: string; notes?: string };
+  planned: number;
+  savedActual: string;
+  savedStatus: Status;
+  onCommitActual: (taskId: string, value: string) => void;
+  onStatusChange: (taskId: string, value: string) => void;
+}
+
+function TaskRow({ task, planned, savedActual, savedStatus, onCommitActual, onStatusChange }: TaskRowProps) {
+  const [localActual, setLocalActual] = useState(savedActual);
+
+  // Sync if the saved value changes externally (e.g. day switch)
+  useEffect(() => { setLocalActual(savedActual); }, [savedActual]);
+
+  const actualNum = Number(localActual);
+  const hasActual = localActual !== "" && !isNaN(actualNum);
+  const diff = hasActual ? actualNum - planned : null;
+
+  const catBadgeColor = (() => {
+    switch (task.category) {
+      case "Recording":    return "bg-primary/10 text-primary";
+      case "Cold Calling": return "bg-secondary-container text-secondary";
+      case "Learning":     return "bg-tertiary-fixed-dim/40 text-on-tertiary-fixed-variant";
+      case "Internal":     return "bg-surface-container-high text-on-surface-variant";
+      default:             return "bg-slate-100 text-slate-600";
+    }
+  })();
+
+  return (
+    <div className="grid grid-cols-[1fr_130px_90px_90px_70px_130px] gap-4 px-8 py-5 items-center hover:bg-surface-container-high/50 transition-colors group">
+      {/* Task name + notes */}
+      <div>
+        <p className="font-bold text-on-surface text-sm leading-snug">{task.name}</p>
+        {task.notes && <p className="text-[11px] text-on-surface-variant mt-0.5">{task.notes}</p>}
+      </div>
+
+      {/* Category badge */}
+      <div className="flex justify-center">
+        <span className={cn("px-2.5 py-1 rounded-full text-[9px] font-extrabold uppercase tracking-wider", catBadgeColor)}>
+          {task.category.toUpperCase()}
+        </span>
+      </div>
+
+      {/* Planned */}
+      <div className="text-center font-semibold text-sm text-on-surface">{planned}</div>
+
+      {/* Actual — local state only, flush on blur */}
+      <div className="flex justify-center">
+        <input
+          type="number"
+          min="0"
+          value={localActual}
+          onChange={e => setLocalActual(e.target.value)}
+          onBlur={() => onCommitActual(task.id, localActual)}
+          placeholder="—"
+          className="w-16 h-9 text-center text-sm font-bold bg-surface-container border border-outline-variant/30 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/40 transition-all text-on-surface placeholder:text-on-surface-variant/40"
+        />
+      </div>
+
+      {/* Diff */}
+      <div className="text-center">
+        {diff === null ? (
+          <span className="text-on-surface-variant/40 text-sm font-bold">0</span>
+        ) : diff === 0 ? (
+          <span className="text-on-surface-variant text-sm font-bold">0</span>
+        ) : diff > 0 ? (
+          <span className="text-red-500 font-bold text-sm">+{diff}</span>
+        ) : (
+          <span className="text-green-600 font-bold text-sm">{diff}</span>
+        )}
+      </div>
+
+      {/* Status dropdown */}
+      <div className="flex justify-center">
+        <div className="relative">
+          <select
+            value={savedStatus}
+            onChange={e => onStatusChange(task.id, e.target.value)}
+            className={cn(
+              "appearance-none pl-3 pr-7 py-1.5 rounded-xl text-xs font-bold border cursor-pointer focus:outline-none focus:ring-2 focus:ring-primary/30 transition-all",
+              STATUS_STYLES[savedStatus] ?? STATUS_STYLES["Pending"]
+            )}
+          >
+            {STATUSES.map(s => <option key={s} value={s}>{s}</option>)}
+          </select>
+          <ChevronDown className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 h-3 w-3 opacity-60" />
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export function DailyLogPage() {
   usePageTitle('Daily Log');
   const { getTasksForDate, getLogsForDate, updateTaskLog, isLoading } = useSchedule();
@@ -183,7 +276,7 @@ export function DailyLogPage() {
       ) : (
         <div className="bg-surface-container-lowest rounded-2xl shadow-sm border border-outline-variant/10 overflow-hidden">
           {/* Table Header */}
-          <div className="grid grid-cols-[1fr_100px_90px_90px_70px_130px] gap-4 px-8 py-3 bg-surface-container border-b border-outline-variant/10">
+          <div className="grid grid-cols-[1fr_130px_90px_90px_70px_130px] gap-4 px-8 py-3 bg-surface-container border-b border-outline-variant/10">
             <span className="text-[10px] font-bold uppercase tracking-widest text-on-surface-variant">Task Description</span>
             <span className="text-[10px] font-bold uppercase tracking-widest text-on-surface-variant text-center">Category</span>
             <span className="text-[10px] font-bold uppercase tracking-widest text-on-surface-variant text-center">Planned<br />(Mins)</span>
@@ -194,98 +287,17 @@ export function DailyLogPage() {
 
           {/* Rows */}
           <div className="divide-y divide-outline-variant/10">
-            {visibleTasks.map(task => {
-              const planned = parsePlannedMins(task.time);
-              const actualRaw = logs[task.id]?.actual ?? "";
-              const actualNum = Number(actualRaw);
-              const hasActual = actualRaw !== "" && !isNaN(actualNum);
-              const diff = hasActual ? actualNum - planned : null;
-              const status: Status = (logs[task.id]?.status as Status) || task.status;
-
-              // Category badge colors (abbreviated)
-              const catShort = task.category.length > 8
-                ? task.category.slice(0, 6).toUpperCase() + ".."
-                : task.category.toUpperCase();
-
-              const catBadgeColor = (() => {
-                switch (task.category) {
-                  case "Recording":    return "bg-primary/10 text-primary";
-                  case "Cold Calling": return "bg-secondary-container text-secondary";
-                  case "Learning":     return "bg-tertiary-fixed-dim/40 text-on-tertiary-fixed-variant";
-                  case "Internal":     return "bg-surface-container-high text-on-surface-variant";
-                  default:             return "bg-slate-100 text-slate-600";
-                }
-              })();
-
-              return (
-                <div
-                  key={task.id}
-                  className="grid grid-cols-[1fr_100px_90px_90px_70px_130px] gap-4 px-8 py-5 items-center hover:bg-surface-container-high/50 transition-colors group"
-                >
-                  {/* Task name + notes */}
-                  <div>
-                    <p className="font-bold text-on-surface text-sm leading-snug">{task.name}</p>
-                    {task.notes && (
-                      <p className="text-[11px] text-on-surface-variant mt-0.5">{task.notes}</p>
-                    )}
-                  </div>
-
-                  {/* Category badge */}
-                  <div className="flex justify-center">
-                    <span className={cn("px-2.5 py-1 rounded-full text-[9px] font-extrabold uppercase tracking-wider", catBadgeColor)}>
-                      {catShort}
-                    </span>
-                  </div>
-
-                  {/* Planned */}
-                  <div className="text-center font-semibold text-sm text-on-surface">{planned}</div>
-
-                  {/* Actual input */}
-                  <div className="flex justify-center">
-                    <input
-                      type="number"
-                      min="0"
-                      value={actualRaw}
-                      onChange={e => handleActualChange(task.id, e.target.value)}
-                      placeholder="—"
-                      className="w-16 h-9 text-center text-sm font-bold bg-surface-container border border-outline-variant/30 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/40 transition-all text-on-surface placeholder:text-on-surface-variant/40"
-                    />
-                  </div>
-
-                  {/* Diff */}
-                  <div className="text-center">
-                    {diff === null ? (
-                      <span className="text-on-surface-variant/40 text-sm font-bold">0</span>
-                    ) : diff === 0 ? (
-                      <span className="text-on-surface-variant text-sm font-bold">0</span>
-                    ) : diff > 0 ? (
-                      <span className="text-red-500 font-bold text-sm">+{diff}</span>
-                    ) : (
-                      <span className="text-green-600 font-bold text-sm">{diff}</span>
-                    )}
-                  </div>
-
-                  {/* Status dropdown */}
-                  <div className="flex justify-center">
-                    <div className="relative">
-                      <select
-                        value={status}
-                        onChange={e => handleStatusChange(task.id, e.target.value)}
-                        className={cn(
-                          "appearance-none pl-3 pr-7 py-1.5 rounded-xl text-xs font-bold border cursor-pointer focus:outline-none focus:ring-2 focus:ring-primary/30 transition-all",
-                          STATUS_STYLES[status] ?? STATUS_STYLES["Pending"]
-                        )}
-                      >
-                        {STATUSES.map(s => (
-                          <option key={s} value={s}>{s}</option>
-                        ))}
-                      </select>
-                      <ChevronDown className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 h-3 w-3 opacity-60" />
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
+            {visibleTasks.map(task => (
+              <TaskRow
+                key={task.id}
+                task={task}
+                planned={parsePlannedMins(task.time)}
+                savedActual={logs[task.id]?.actual ?? ""}
+                savedStatus={(logs[task.id]?.status as Status) || task.status}
+                onCommitActual={handleActualChange}
+                onStatusChange={handleStatusChange}
+              />
+            ))}
           </div>
 
           {/* Infinite scroll sentinel */}
@@ -303,13 +315,6 @@ export function DailyLogPage() {
                   <CheckCircle2 className="h-3.5 w-3.5" /> Saved
                 </span>
               )}
-              <button
-                onClick={handleSave}
-                disabled={isSaving}
-                className="px-4 py-2 text-sm font-bold text-primary hover:underline transition-colors disabled:opacity-50"
-              >
-                Save Progress
-              </button>
               <button
                 onClick={handleSave}
                 disabled={isSaving}
