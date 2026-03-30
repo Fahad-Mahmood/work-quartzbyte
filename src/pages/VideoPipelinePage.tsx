@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { Plus, Film, CheckCircle2, Clock, ChevronRight, Clapperboard } from 'lucide-react';
+import { Plus, Film, CheckCircle2, Clock, ChevronRight, Clapperboard, Trash2, AlertTriangle } from 'lucide-react';
 import { supabase } from '@/src/lib/supabase';
 import { useAuth } from '@/src/context/AuthContext';
 import { usePageTitle } from '@/src/hooks/usePageTitle';
@@ -57,6 +57,8 @@ export function VideoPipelinePage() {
   const [isLoading, setIsLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<VideoStatus | 'All'>('All');
   const [showNewForm, setShowNewForm] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState<Video | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
   const [newTitle, setNewTitle] = useState('');
   const [newCategory, setNewCategory] = useState('');
   const [isCreating, setIsCreating] = useState(false);
@@ -94,6 +96,15 @@ export function VideoPipelinePage() {
       setNewCategory('');
       setShowNewForm(false);
     }
+  };
+
+  const handleDelete = async () => {
+    if (!supabase || !deleteTarget) return;
+    setIsDeleting(true);
+    await supabase.from('work_videos').delete().eq('id', deleteTarget.id);
+    setVideos(prev => prev.filter(v => v.id !== deleteTarget.id));
+    setIsDeleting(false);
+    setDeleteTarget(null);
   };
 
   if (isLoading) {
@@ -231,20 +242,21 @@ export function VideoPipelinePage() {
       ) : (
         <div className="bg-surface-container-lowest rounded-2xl shadow-sm border border-outline-variant/10 overflow-hidden">
           {/* Table header */}
-          <div className="grid grid-cols-[1fr_140px_160px_160px_120px_80px] gap-4 px-8 py-3 bg-surface-container border-b border-outline-variant/10">
+          <div className="grid grid-cols-[1fr_140px_160px_160px_120px_80px_40px] gap-4 px-8 py-3 bg-surface-container border-b border-outline-variant/10">
             <span className="text-[10px] font-bold uppercase tracking-widest text-on-surface-variant">Video Title</span>
             <span className="text-[10px] font-bold uppercase tracking-widest text-on-surface-variant">Category</span>
             <span className="text-[10px] font-bold uppercase tracking-widest text-on-surface-variant">Creator</span>
             <span className="text-[10px] font-bold uppercase tracking-widest text-on-surface-variant">Current Status</span>
             <span className="text-[10px] font-bold uppercase tracking-widest text-on-surface-variant">Last Updated</span>
             <span className="text-[10px] font-bold uppercase tracking-widest text-on-surface-variant text-right">Actions</span>
+            <span />
           </div>
 
           <div className="divide-y divide-outline-variant/10">
             {filtered.map(video => (
               <div
                 key={video.id}
-                className="grid grid-cols-[1fr_140px_160px_160px_120px_80px] gap-4 px-8 py-5 items-center hover:bg-surface-container-high/40 transition-colors group"
+                className="grid grid-cols-[1fr_140px_160px_160px_120px_80px_40px] gap-4 px-8 py-5 items-center hover:bg-surface-container-high/40 transition-colors group"
               >
                 {/* Title + thumbnail */}
                 <div className="flex items-center gap-4 min-w-0">
@@ -298,6 +310,17 @@ export function VideoPipelinePage() {
                     Open <ChevronRight className="h-4 w-4" />
                   </Link>
                 </div>
+
+                {/* Delete */}
+                <div className="flex justify-end">
+                  <button
+                    onClick={() => setDeleteTarget(video)}
+                    className="p-1.5 rounded-lg text-on-surface-variant/40 hover:text-error hover:bg-error-container opacity-0 group-hover:opacity-100 transition-all"
+                    title="Delete video"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </button>
+                </div>
               </div>
             ))}
           </div>
@@ -309,6 +332,48 @@ export function VideoPipelinePage() {
             </p>
           </div>
         </div>
+      )}
+
+      {/* Delete confirmation dialog */}
+      {deleteTarget && (
+        <>
+          <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-sm" onClick={() => !isDeleting && setDeleteTarget(null)} />
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <div className="bg-surface-container-lowest rounded-2xl shadow-2xl border border-outline-variant/20 w-full max-w-md p-8 animate-in fade-in zoom-in-95 duration-200">
+              <div className="flex items-center gap-4 mb-6">
+                <div className="w-12 h-12 rounded-2xl bg-error-container flex items-center justify-center shrink-0">
+                  <AlertTriangle className="h-6 w-6 text-error" />
+                </div>
+                <div>
+                  <h3 className="font-headline font-bold text-on-surface text-lg">Delete Video?</h3>
+                  <p className="text-sm text-on-surface-variant mt-0.5">This action cannot be undone.</p>
+                </div>
+              </div>
+              <p className="text-sm text-on-surface mb-8">
+                Are you sure you want to delete{' '}
+                <span className="font-bold">"{deleteTarget.title}"</span>?
+                All associated data will be permanently removed.
+              </p>
+              <div className="flex gap-3 justify-end">
+                <button
+                  onClick={() => setDeleteTarget(null)}
+                  disabled={isDeleting}
+                  className="px-5 py-2.5 rounded-xl border border-outline-variant text-on-surface-variant font-bold text-sm hover:bg-surface-container-low transition-all disabled:opacity-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleDelete}
+                  disabled={isDeleting}
+                  className="px-5 py-2.5 bg-error text-white rounded-xl font-bold text-sm hover:opacity-90 transition-all disabled:opacity-50 flex items-center gap-2"
+                >
+                  <Trash2 className="h-4 w-4" />
+                  {isDeleting ? 'Deleting…' : 'Delete Video'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </>
       )}
     </div>
   );
