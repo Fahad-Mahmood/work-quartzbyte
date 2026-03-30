@@ -1,7 +1,7 @@
 import { useState } from "react";
-import { startOfWeek, addDays, format } from "date-fns";
+import { startOfWeek, addDays, addWeeks, format } from "date-fns";
 import { Button } from "@/src/components/ui/button";
-import { Plus, Share, Filter, ChevronLeft, ChevronRight, Edit, Clock, CheckCircle, AlertCircle, PlayCircle, Download, BarChart2 } from "lucide-react";
+import { Plus, Share, Filter, ChevronLeft, ChevronRight, Edit, Clock, CheckCircle, AlertCircle, PlayCircle, Download, BarChart2, Copy } from "lucide-react";
 import { useSchedule, Category, Status, Task } from "@/src/context/ScheduleContext";
 import { useUserProfile } from "@/src/context/ProfileContext";
 import { cn } from "@/src/lib/utils";
@@ -11,18 +11,22 @@ const CATEGORIES: Category[] = ['Recording', 'Cold Calling', 'Learning', 'Intern
 const STATUSES: Status[] = ['Completed', 'In Progress', 'Pending', 'Overdue'];
 
 export function WeeklySchedulePage() {
-  const { schedule, getTasksForDate, isLoading } = useSchedule();
+  const { schedule, getTasksForDate, addTask, isLoading } = useSchedule();
   const { profile } = useUserProfile();
   const today = new Date();
-  const start = startOfWeek(today, { weekStartsOn: 1 }); // Monday start
+
+  const [weekOffset, setWeekOffset] = useState(0);
+  const [isCopying, setIsCopying]   = useState(false);
+
+  const start = addWeeks(startOfWeek(today, { weekStartsOn: 1 }), weekOffset);
 
   const weekDays = Array.from({ length: 5 }).map((_, i) => {
     const date = addDays(start, i);
     return {
       id: format(date, 'yyyy-MM-dd'),
-      label: format(date, 'EEEE'), // e.g., Monday
-      shortLabel: format(date, 'EEE'), // e.g., Mon
-      dateStr: format(date, 'MMM d'), // e.g., Jan 6
+      label: format(date, 'EEEE'),
+      shortLabel: format(date, 'EEE'),
+      dateStr: format(date, 'MMM d'),
     };
   });
 
@@ -50,6 +54,26 @@ export function WeeklySchedulePage() {
   };
 
   const dateRangeStr = `${format(start, 'MMM d')} - ${format(addDays(start, 4), 'd, yyyy')}`;
+
+  const handleCopyToNextWeek = async () => {
+    setIsCopying(true);
+    try {
+      for (const day of weekDays) {
+        const tasks = getTasksForDate(day.id);
+        const nextDate = format(addDays(new Date(day.id), 7), 'yyyy-MM-dd');
+        for (const task of tasks) {
+          await addTask(nextDate, task.category, task.name, task.time, {
+            assignedTo: task.assignedTo,
+            notes: task.notes,
+            status: 'Pending',
+          });
+        }
+      }
+      setWeekOffset((w: number) => w + 1);
+    } finally {
+      setIsCopying(false);
+    }
+  };
 
   if (isLoading) {
     return (
@@ -155,10 +179,15 @@ export function WeeklySchedulePage() {
             </div>
             <div className="flex items-center gap-4">
               <div className="flex items-center gap-1 text-on-surface-variant bg-surface-container px-2 py-1 rounded-md">
-                <button className="hover:text-primary"><ChevronLeft className="h-4 w-4" /></button>
+                <button onClick={() => setWeekOffset((w: number) => w - 1)} className="hover:text-primary"><ChevronLeft className="h-4 w-4" /></button>
                 <span className="text-sm font-semibold mx-1">{dateRangeStr}</span>
-                <button className="hover:text-primary"><ChevronRight className="h-4 w-4" /></button>
+                <button onClick={() => setWeekOffset((w: number) => w + 1)} className="hover:text-primary"><ChevronRight className="h-4 w-4" /></button>
               </div>
+              {weekOffset !== 0 && (
+                <button onClick={() => setWeekOffset(0)} className="text-xs text-primary font-semibold hover:underline">
+                  Today
+                </button>
+              )}
               <span className="text-xs text-on-surface-variant font-medium">Standard Hours • 40h/week</span>
             </div>
           </div>
@@ -169,6 +198,16 @@ export function WeeklySchedulePage() {
             className="px-6 py-2.5 bg-primary text-white rounded-xl text-sm font-bold flex items-center gap-2 hover:bg-primary-container transition-all shadow-lg shadow-primary/20"
           >
             <Plus className="h-5 w-5" /> Add New Task
+          </Button>
+          <Button
+            variant="outline"
+            onClick={handleCopyToNextWeek}
+            disabled={isCopying || totalTasks.length === 0}
+            className="px-4 py-2.5 bg-surface-container-lowest border border-outline-variant/20 rounded-xl hover:bg-surface-container-low transition-colors flex items-center gap-2 text-sm font-bold disabled:opacity-50"
+            title="Copy this week's tasks to next week"
+          >
+            <Copy className="h-4 w-4" />
+            {isCopying ? 'Copying…' : 'Copy to Next Week'}
           </Button>
           <Button variant="outline" className="p-2.5 bg-surface-container-lowest border border-outline-variant/20 rounded-xl hover:bg-surface-container-low transition-colors">
             <Share className="h-5 w-5" />
