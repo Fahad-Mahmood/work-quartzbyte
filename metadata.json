@@ -1,0 +1,5 @@
+{
+  "name": "WakeUp Better Internal Tools",
+  "description": "Internal tools for WakeUp Better team to manage weekly schedules, daily task logs, and video production tracking with a Supabase backend.",
+  "requestFramePermissions": []
+}
