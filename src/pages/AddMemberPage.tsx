@@ -45,16 +45,22 @@ export function AddMemberPage() {
     setIsSaving(true);
     setError(null);
     try {
-      const { error: dbError } = await supabase.from('work_invitations').insert({
-        email:      email.trim().toLowerCase(),
-        full_name:  fullName.trim(),
-        job_title:  jobTitle,
-        role,
-        invited_by: user.id,
-        status:     'pending',
+      const { data: { session } } = await supabase.auth.getSession();
+      const res = await supabase.functions.invoke('invite-member', {
+        body: {
+          email:      email.trim().toLowerCase(),
+          full_name:  fullName.trim(),
+          job_title:  jobTitle,
+          role,
+          invited_by: user.id,
+        },
+        headers: {
+          Authorization: `Bearer ${session?.access_token}`,
+        },
       });
 
-      if (dbError) throw dbError;
+      if (res.error) throw new Error(res.error.message);
+      if (res.data?.error) throw new Error(res.data.error);
 
       setSuccess(true);
       setFullName('');
@@ -85,9 +91,9 @@ export function AddMemberPage() {
         <div className="flex items-center gap-3 px-5 py-4 bg-tertiary-fixed-dim/30 border border-tertiary-fixed-dim rounded-2xl text-on-tertiary-fixed-variant">
           <CheckCircle className="h-5 w-5 shrink-0" />
           <div>
-            <p className="font-bold text-sm">Invitation created successfully.</p>
+            <p className="font-bold text-sm">Invitation sent successfully.</p>
             <p className="text-xs mt-0.5">
-              Share the app URL with the new member and ask them to sign up with their work email.
+              An email has been sent to <span className="font-bold">{email || 'the new member'}</span> with a link to set their password and activate their account.
             </p>
           </div>
         </div>
