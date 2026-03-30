@@ -11,7 +11,6 @@ Deno.serve(async (req) => {
   }
 
   try {
-    // Verify the caller is authenticated
     const authHeader = req.headers.get('Authorization');
     if (!authHeader) {
       return new Response(JSON.stringify({ error: 'Unauthorized' }), {
@@ -27,52 +26,50 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Admin client uses service role key — safe here, never exposed to browser
+    // Admin client with service role — bypasses RLS
     const adminClient = createClient(
       Deno.env.get('SUPABASE_URL')!,
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
+      { auth: { autoRefreshToken: false, persistSession: false } }
     );
 
-    // Verify caller is an admin
-    const callerClient = createClient(
-      Deno.env.get('SUPABASE_URL')!,
-      Deno.env.get('SUPABASE_ANON_KEY')!,
-      { global: { headers: { Authorization: authHeader } } },
-    );
-    const { data: { user: caller } } = await callerClient.auth.getUser();
-    if (!caller) {
-      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+    // Verify the JWT and get the caller's user ID
+    const token = authHeader.replace('Bearer ', '');
+    const { data: { user: caller }, error: userError } = await adminClient.auth.getUser(token);
+
+    if (userError || !caller) {
+      return new Response(JSON.stringify({ error: 'Unauthorized', detail: userError?.message }), {
         status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
+
+    // Check caller is admin
     const { data: callerProfile } = await adminClient
       .from('work_profiles')
       .select('role')
       .eq('user_id', caller.id)
-      .single();
+      .maybeSingle();
+
     if (callerProfile?.role !== 'admin') {
       return new Response(JSON.stringify({ error: 'Only admins can invite members' }), {
         status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
 
-    // Send the invite email — Supabase sends a "Set your password" link
+    // Send invite email — Supabase sends a "Set your password" link
     const { data: inviteData, error: inviteError } = await adminClient.auth.admin.inviteUserByEmail(
       email,
       {
         data: { full_name, job_title, role: role ?? 'member' },
-        redirectTo: `${Deno.env.get('SITE_URL') ?? 'http://localhost:5173'}/auth`,
+        redirectTo: `${Deno.env.get('SITE_URL') ?? 'https://work.quartzbytee.com'}/auth`,
       },
     );
 
-    if (inviteError) {
-      // If user already exists in auth, that's okay — still record the invitation
-      if (!inviteError.message.includes('already been registered')) {
-        throw inviteError;
-      }
+    if (inviteError && !inviteError.message.includes('already been registered')) {
+      throw inviteError;
     }
 
-    // Upsert into work_invitations
+    // Upsert invitation record
     const { error: dbError } = await adminClient.from('work_invitations').upsert(
       {
         email: email.trim().toLowerCase(),
@@ -86,8 +83,8 @@ Deno.serve(async (req) => {
     );
     if (dbError) throw dbError;
 
-    // Pre-create the work_profile row so role is set before first login
-    if (inviteData?.user) {
+    // Pre-create the work_profile so role is set on first login
+    if (inviteData?.user?.id) {
       await adminClient.from('work_profiles').upsert(
         {
           user_id: inviteData.user.id,
@@ -103,6 +100,7 @@ Deno.serve(async (req) => {
     return new Response(JSON.stringify({ success: true }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
+
   } catch (err: any) {
     return new Response(JSON.stringify({ error: err.message }), {
       status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
