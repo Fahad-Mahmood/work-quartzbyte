@@ -1,11 +1,10 @@
-import { useState, useMemo } from "react";
+import { useState } from "react";
 import { startOfWeek, addDays, format } from "date-fns";
-import { Card, CardContent } from "@/src/components/ui/card";
 import { Button } from "@/src/components/ui/button";
-import { Input } from "@/src/components/ui/input";
 import { Plus, Share, Filter, ChevronLeft, ChevronRight, Edit, Clock, CheckCircle, AlertCircle, PlayCircle, Download, BarChart2 } from "lucide-react";
 import { useSchedule, Category, Status, Task } from "@/src/context/ScheduleContext";
 import { cn } from "@/src/lib/utils";
+import { TaskDrawer } from "@/src/components/TaskDrawer";
 
 const CATEGORIES: Category[] = ['Recording', 'Cold Calling', 'Learning', 'Internal'];
 const STATUSES: Status[] = ['Completed', 'In Progress', 'Pending', 'Overdue'];
@@ -28,6 +27,26 @@ export function WeeklySchedulePage() {
   const [filterCategory, setFilterCategory] = useState<Category | 'All'>('All');
   const [filterStatus, setFilterStatus] = useState<Status | 'All Statuses'>('All Statuses');
 
+  // Drawer state
+  const [drawerOpen, setDrawerOpen]       = useState(false);
+  const [drawerTask, setDrawerTask]       = useState<Task | null>(null);
+  const [drawerTaskDate, setDrawerTaskDate] = useState<string | null>(null);
+  const [drawerInitDate, setDrawerInitDate] = useState<string | null>(null);
+
+  const openAddDrawer = (date?: string) => {
+    setDrawerTask(null);
+    setDrawerTaskDate(null);
+    setDrawerInitDate(date ?? weekDays[0]?.id ?? null);
+    setDrawerOpen(true);
+  };
+
+  const openEditDrawer = (task: Task, date: string) => {
+    setDrawerTask(task);
+    setDrawerTaskDate(date);
+    setDrawerInitDate(null);
+    setDrawerOpen(true);
+  };
+
   const dateRangeStr = `${format(start, 'MMM d')} - ${format(addDays(start, 4), 'd, yyyy')}`;
 
   if (isLoading) {
@@ -40,11 +59,11 @@ export function WeeklySchedulePage() {
 
   const getCategoryColor = (category: Category) => {
     switch (category) {
-      case 'Recording': return 'bg-primary text-primary';
+      case 'Recording':   return 'bg-primary text-white';
       case 'Cold Calling': return 'bg-secondary-container text-secondary';
-      case 'Learning': return 'bg-tertiary-fixed-dim text-on-tertiary-fixed-variant';
-      case 'Internal': return 'bg-on-surface-variant text-on-surface-variant';
-      default: return 'bg-slate-200 text-slate-500';
+      case 'Learning':    return 'bg-tertiary-fixed-dim text-on-tertiary-fixed-variant';
+      case 'Internal':    return 'bg-on-surface-variant text-white';
+      default:            return 'bg-slate-200 text-slate-600';
     }
   };
 
@@ -102,7 +121,10 @@ export function WeeklySchedulePage() {
           </div>
         </div>
         <div className="flex gap-3">
-          <Button className="px-6 py-2.5 bg-primary text-white rounded-xl text-sm font-bold flex items-center gap-2 hover:bg-primary-container transition-all shadow-lg shadow-primary/20">
+          <Button
+            onClick={() => openAddDrawer()}
+            className="px-6 py-2.5 bg-primary text-white rounded-xl text-sm font-bold flex items-center gap-2 hover:bg-primary-container transition-all shadow-lg shadow-primary/20"
+          >
             <Plus className="h-5 w-5" /> Add New Task
           </Button>
           <Button variant="outline" className="p-2.5 bg-surface-container-lowest border border-outline-variant/20 rounded-xl hover:bg-surface-container-low transition-colors">
@@ -112,7 +134,7 @@ export function WeeklySchedulePage() {
       </div>
 
       {/* Quick Filter Bar */}
-      <div className="bg-white dark:bg-slate-900 p-4 rounded-2xl shadow-sm border border-outline-variant/10 flex flex-wrap items-center gap-6">
+      <div className="bg-white p-4 rounded-2xl shadow-sm border border-outline-variant/10 flex flex-wrap items-center gap-6">
         <div className="flex items-center gap-2">
           <Filter className="h-5 w-5 text-on-surface-variant" />
           <span className="text-xs font-bold uppercase tracking-wider text-on-surface-variant">Quick Filter</span>
@@ -121,12 +143,12 @@ export function WeeklySchedulePage() {
         <div className="flex items-center gap-3">
           <span className="text-xs font-medium text-on-surface-variant">Category:</span>
           <div className="flex gap-2">
-            <button 
+            <button
               onClick={() => setFilterCategory('All')}
               className={cn("px-3 py-1 rounded-full text-[11px] font-semibold transition-colors", filterCategory === 'All' ? "bg-primary text-white" : "bg-surface-container-high text-on-surface-variant hover:bg-primary-fixed hover:text-on-primary-fixed")}
             >All</button>
             {CATEGORIES.map(cat => (
-              <button 
+              <button
                 key={cat}
                 onClick={() => setFilterCategory(cat)}
                 className={cn("px-3 py-1 rounded-full text-[11px] font-semibold transition-colors", filterCategory === cat ? "bg-primary text-white" : "bg-surface-container-high text-on-surface-variant hover:bg-primary-fixed hover:text-on-primary-fixed")}
@@ -136,7 +158,7 @@ export function WeeklySchedulePage() {
         </div>
         <div className="flex items-center gap-3">
           <span className="text-xs font-medium text-on-surface-variant">Status:</span>
-          <select 
+          <select
             className="text-xs font-semibold bg-surface-container border-none rounded-lg focus:ring-0 py-1.5 pl-3 pr-8 text-on-surface"
             value={filterStatus}
             onChange={(e) => setFilterStatus(e.target.value as any)}
@@ -146,7 +168,7 @@ export function WeeklySchedulePage() {
           </select>
         </div>
         <div className="ml-auto">
-          <button 
+          <button
             onClick={() => { setFilterCategory('All'); setFilterStatus('All Statuses'); }}
             className="text-primary text-xs font-bold hover:underline"
           >Clear All</button>
@@ -184,7 +206,11 @@ export function WeeklySchedulePage() {
                       <div className="flex justify-between items-start mb-2">
                         <span className={cn("text-[9px] font-bold uppercase tracking-tight", catColor.split(' ')[1])}>{task.category}</span>
                         <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                          <button className="p-1 hover:bg-surface-container rounded-md text-on-surface-variant hover:text-primary transition-colors" title="Edit Task">
+                          <button
+                            onClick={() => openEditDrawer(task, day.id)}
+                            className="p-1 hover:bg-surface-container rounded-md text-on-surface-variant hover:text-primary transition-colors"
+                            title="Edit Task"
+                          >
                             <Edit className="h-3.5 w-3.5" />
                           </button>
                         </div>
@@ -197,7 +223,7 @@ export function WeeklySchedulePage() {
                         </div>
                       </div>
                       <button className={cn("w-full py-1.5 text-[10px] font-bold rounded-lg transition-colors flex items-center justify-center gap-2", statColor)}>
-                        {statIcon} {task.status === 'Pending' ? 'Update Status' : task.status}
+                        {statIcon} {task.status}
                       </button>
                     </div>
                   );
@@ -253,7 +279,10 @@ export function WeeklySchedulePage() {
                         </span>
                       </td>
                       <td className="px-8 py-6 text-right">
-                        <button className="text-primary hover:bg-primary/10 p-2 rounded-lg transition-colors">
+                        <button
+                          onClick={() => openEditDrawer(task, day.id)}
+                          className="text-primary hover:bg-primary/10 p-2 rounded-lg transition-colors"
+                        >
                           <Edit className="h-5 w-5" />
                         </button>
                       </td>
@@ -292,6 +321,15 @@ export function WeeklySchedulePage() {
           <p className="text-3xl font-headline font-extrabold text-on-surface mt-1">94%</p>
         </div>
       </div>
+
+      <TaskDrawer
+        isOpen={drawerOpen}
+        onClose={() => setDrawerOpen(false)}
+        weekDays={weekDays}
+        initialDate={drawerInitDate}
+        task={drawerTask}
+        taskDate={drawerTaskDate}
+      />
     </div>
   );
 }
