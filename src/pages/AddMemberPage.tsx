@@ -45,7 +45,6 @@ export function AddMemberPage() {
     setIsSaving(true);
     setError(null);
     try {
-      const { data: { session } } = await supabase.auth.getSession();
       const res = await supabase.functions.invoke('invite-member', {
         body: {
           email:      email.trim().toLowerCase(),
@@ -53,9 +52,6 @@ export function AddMemberPage() {
           job_title:  jobTitle,
           role,
           invited_by: user.id,
-        },
-        headers: {
-          Authorization: `Bearer ${session?.access_token}`,
         },
       });
 
