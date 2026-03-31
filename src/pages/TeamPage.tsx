@@ -1,11 +1,11 @@
 import { useState, useEffect } from 'react';
-import { Users, ChevronRight, ArrowUpDown, MailCheck, Loader2 } from 'lucide-react';
+import { Users, ArrowUpDown, MailCheck, Loader2, Calendar, X, ChevronLeft, ChevronRight } from 'lucide-react';
 import { supabase } from '@/src/lib/supabase';
 import { useAuth } from '@/src/context/AuthContext';
 import { useUserProfile } from '@/src/context/ProfileContext';
 import { usePageTitle } from '@/src/hooks/usePageTitle';
 import { cn } from '@/src/lib/utils';
-import { Link } from 'react-router-dom';
+import { startOfWeek, addDays, format, addWeeks } from 'date-fns';
 
 interface Member {
   id: string;
@@ -28,6 +28,29 @@ interface PendingInvite {
   created_at: string;
 }
 
+interface Task {
+  id: string;
+  name: string;
+  category: string;
+  time_slot: string;
+  status: string;
+  notes: string | null;
+}
+
+const STATUS_STYLES: Record<string, string> = {
+  Completed:    'bg-green-100 text-green-700',
+  'In Progress':'bg-blue-100 text-blue-700',
+  Pending:      'bg-surface-container-high text-on-surface-variant',
+  Overdue:      'bg-red-100 text-red-500',
+};
+
+const CAT_COLORS: Record<string, string> = {
+  Recording:     'bg-primary/10 text-primary',
+  'Cold Calling':'bg-secondary-container text-secondary',
+  Learning:      'bg-tertiary-fixed-dim/40 text-on-tertiary-fixed-variant',
+  Internal:      'bg-surface-container-high text-on-surface-variant',
+};
+
 function getInitials(name: string | null) {
   if (!name) return '?';
   return name.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase();
@@ -43,6 +66,136 @@ function getAvatarBg(name: string | null) {
   return colors[(name?.charCodeAt(0) ?? 0) % colors.length];
 }
 
+function ScheduleModal({ member, onClose }: { member: Member; onClose: () => void }) {
+  const [weekOffset, setWeekOffset] = useState(0);
+  const [tasksByDate, setTasksByDate] = useState<Record<string, Task[]>>({});
+  const [isLoading, setIsLoading] = useState(true);
+
+  const today = new Date();
+  const start = addWeeks(startOfWeek(today, { weekStartsOn: 1 }), weekOffset);
+  const weekDays = Array.from({ length: 5 }).map((_, i) => {
+    const date = addDays(start, i);
+    return { id: format(date, 'yyyy-MM-dd'), label: format(date, 'EEE'), dateStr: format(date, 'MMM d') };
+  });
+
+  useEffect(() => {
+    if (!supabase) { setIsLoading(false); return; }
+    setIsLoading(true);
+    const dateIds = weekDays.map(d => d.id);
+    supabase
+      .from('work_tasks')
+      .select('id, name, category, time_slot, status, notes, date')
+      .eq('user_id', member.user_id)
+      .in('date', dateIds)
+      .order('time_slot', { ascending: true })
+      .then(({ data }) => {
+        const grouped: Record<string, Task[]> = {};
+        dateIds.forEach(d => { grouped[d] = []; });
+        (data ?? []).forEach((t: any) => {
+          if (grouped[t.date]) grouped[t.date].push(t);
+        });
+        setTasksByDate(grouped);
+        setIsLoading(false);
+      });
+  }, [member.user_id, weekOffset]);
+
+  const totalTasks = Object.values(tasksByDate).flat().length;
+  const dateRangeStr = `${format(start, 'MMM d')} – ${format(addDays(start, 4), 'MMM d, yyyy')}`;
+
+  return (
+    <>
+      <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-sm" onClick={onClose} />
+      <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+        <div className="bg-surface-container-lowest rounded-2xl shadow-2xl border border-outline-variant/20 w-full max-w-4xl max-h-[90vh] flex flex-col animate-in fade-in zoom-in-95 duration-200">
+
+          {/* Modal header */}
+          <div className="flex items-center justify-between px-6 py-4 border-b border-outline-variant/10 shrink-0">
+            <div className="flex items-center gap-3">
+              <div className={cn('w-10 h-10 rounded-full flex items-center justify-center text-sm font-extrabold shrink-0', getAvatarBg(member.full_name))}>
+                {getInitials(member.full_name)}
+              </div>
+              <div>
+                <p className="font-bold text-on-surface text-sm">{member.full_name}</p>
+                <p className="text-xs text-on-surface-variant">{member.job_title}</p>
+              </div>
+            </div>
+            <div className="flex items-center gap-3">
+              {/* Week nav */}
+              <div className="flex items-center gap-1 bg-surface-container px-2 py-1 rounded-lg text-on-surface-variant text-xs font-bold">
+                <button onClick={() => setWeekOffset(o => o - 1)} className="hover:text-primary p-0.5">
+                  <ChevronLeft className="h-4 w-4" />
+                </button>
+                <span className="px-2">{dateRangeStr}</span>
+                <button onClick={() => setWeekOffset(o => o + 1)} className="hover:text-primary p-0.5">
+                  <ChevronRight className="h-4 w-4" />
+                </button>
+              </div>
+              <button onClick={onClose} className="p-2 rounded-full hover:bg-surface-container-low text-on-surface-variant transition-colors">
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+          </div>
+
+          {/* Schedule content */}
+          <div className="overflow-y-auto flex-1 p-6">
+            {isLoading ? (
+              <div className="flex items-center justify-center py-16">
+                <Loader2 className="h-8 w-8 animate-spin text-primary" />
+              </div>
+            ) : totalTasks === 0 ? (
+              <div className="text-center py-16">
+                <Calendar className="h-12 w-12 text-on-surface-variant/20 mx-auto mb-3" />
+                <p className="font-bold text-on-surface">No tasks this week</p>
+                <p className="text-sm text-on-surface-variant mt-1">{member.full_name} has no scheduled tasks for this period.</p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
+                {weekDays.map(day => {
+                  const tasks = tasksByDate[day.id] ?? [];
+                  return (
+                    <div key={day.id} className="flex flex-col gap-2">
+                      <div className="text-center pb-2 border-b border-outline-variant/10">
+                        <p className="text-[10px] font-bold uppercase tracking-widest text-on-surface-variant">{day.label}</p>
+                        <p className="text-sm font-extrabold text-on-surface font-headline">{day.dateStr}</p>
+                        <p className="text-[10px] text-on-surface-variant/60 mt-0.5">{tasks.length} task{tasks.length !== 1 ? 's' : ''}</p>
+                      </div>
+                      {tasks.length === 0 ? (
+                        <p className="text-xs text-on-surface-variant/40 text-center py-4">—</p>
+                      ) : (
+                        tasks.map(task => (
+                          <div key={task.id} className="bg-surface-container rounded-xl p-3 space-y-1.5">
+                            <p className="text-xs font-bold text-on-surface leading-snug">{task.name}</p>
+                            <p className="text-[10px] text-on-surface-variant">{task.time_slot}</p>
+                            <div className="flex items-center justify-between gap-1 flex-wrap">
+                              <span className={cn('px-1.5 py-0.5 rounded text-[9px] font-extrabold uppercase tracking-wider', CAT_COLORS[task.category] ?? 'bg-slate-100 text-slate-600')}>
+                                {task.category}
+                              </span>
+                              <span className={cn('px-1.5 py-0.5 rounded text-[9px] font-bold', STATUS_STYLES[task.status] ?? STATUS_STYLES['Pending'])}>
+                                {task.status}
+                              </span>
+                            </div>
+                          </div>
+                        ))
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+
+          {/* Footer */}
+          <div className="px-6 py-3 border-t border-outline-variant/10 bg-surface-container-lowest/60 shrink-0">
+            <p className="text-xs text-on-surface-variant">
+              <span className="font-bold text-on-surface">{totalTasks}</span> task{totalTasks !== 1 ? 's' : ''} scheduled this week
+            </p>
+          </div>
+        </div>
+      </div>
+    </>
+  );
+}
+
 export function TeamPage() {
   usePageTitle('Team');
   const { user } = useAuth();
@@ -55,6 +208,7 @@ export function TeamPage() {
   const [resendingId, setResendingId] = useState<string | null>(null);
   const [resentId, setResentId] = useState<string | null>(null);
   const [resendError, setResendError] = useState<string | null>(null);
+  const [scheduleTarget, setScheduleTarget] = useState<Member | null>(null);
 
   useEffect(() => {
     if (!supabase) { setIsLoading(false); return; }
@@ -191,8 +345,8 @@ export function TeamPage() {
       ) : (
         <div className="bg-surface-container-lowest rounded-2xl shadow-sm border border-outline-variant/10 overflow-hidden">
 
-          {/* Desktop header row — hidden on mobile */}
-          <div className="hidden md:grid grid-cols-[1fr_130px_1fr_130px_160px] gap-4 px-8 py-3 bg-surface-container border-b border-outline-variant/10">
+          {/* Desktop header row */}
+          <div className="hidden md:grid grid-cols-[1fr_130px_1fr_130px_180px] gap-4 px-8 py-3 bg-surface-container border-b border-outline-variant/10">
             <span className="text-[10px] font-bold uppercase tracking-widest text-on-surface-variant">Member</span>
             <span className="text-[10px] font-bold uppercase tracking-widest text-on-surface-variant">Role</span>
             <span className="text-[10px] font-bold uppercase tracking-widest text-on-surface-variant">Email</span>
@@ -208,7 +362,7 @@ export function TeamPage() {
               return (
                 <div key={member.id} className="hover:bg-surface-container-high/40 transition-colors">
 
-                  {/* Mobile card layout */}
+                  {/* Mobile card */}
                   <div className="flex md:hidden items-start gap-4 px-5 py-4">
                     {member.avatar_url ? (
                       <img src={member.avatar_url} alt={member.full_name ?? ''} className="w-11 h-11 rounded-full object-cover shrink-0 mt-0.5" />
@@ -235,21 +389,18 @@ export function TeamPage() {
                           <span className="w-1.5 h-1.5 rounded-full bg-green-500" />
                           <span className="text-xs font-semibold text-on-surface">Active</span>
                         </div>
-                        {isCurrentUser ? (
-                          <Link to="/settings" className="flex items-center gap-1 text-primary text-xs font-bold hover:underline">
-                            Profile <ChevronRight className="h-3.5 w-3.5" />
-                          </Link>
-                        ) : (
-                          <span className="flex items-center gap-1 text-on-surface-variant/40 text-xs font-bold cursor-not-allowed">
-                            Profile <ChevronRight className="h-3.5 w-3.5" />
-                          </span>
-                        )}
+                        <button
+                          onClick={() => setScheduleTarget(member)}
+                          className="flex items-center gap-1 text-primary text-xs font-bold hover:underline"
+                        >
+                          <Calendar className="h-3.5 w-3.5" /> View Schedule
+                        </button>
                       </div>
                     </div>
                   </div>
 
-                  {/* Desktop row layout */}
-                  <div className="hidden md:grid grid-cols-[1fr_130px_1fr_130px_160px] gap-4 px-8 py-5 items-center">
+                  {/* Desktop row */}
+                  <div className="hidden md:grid grid-cols-[1fr_130px_1fr_130px_180px] gap-4 px-8 py-5 items-center">
                     <div className="flex items-center gap-4">
                       {member.avatar_url ? (
                         <img src={member.avatar_url} alt={member.full_name ?? ''} className="w-11 h-11 rounded-full object-cover shrink-0" />
@@ -280,15 +431,12 @@ export function TeamPage() {
                       <span className="text-sm font-semibold text-on-surface">Active</span>
                     </div>
                     <div className="flex justify-end">
-                      {isCurrentUser ? (
-                        <Link to="/settings" className="flex items-center gap-1 text-primary text-sm font-bold hover:underline">
-                          Profile <ChevronRight className="h-4 w-4" />
-                        </Link>
-                      ) : (
-                        <span className="flex items-center gap-1 text-on-surface-variant/40 text-sm font-bold cursor-not-allowed select-none">
-                          Profile <ChevronRight className="h-4 w-4" />
-                        </span>
-                      )}
+                      <button
+                        onClick={() => setScheduleTarget(member)}
+                        className="flex items-center gap-1.5 text-primary text-sm font-bold hover:underline"
+                      >
+                        <Calendar className="h-4 w-4" /> View Schedule
+                      </button>
                     </div>
                   </div>
                 </div>
@@ -299,7 +447,7 @@ export function TeamPage() {
             {pending.map(invite => (
               <div key={invite.id} className="bg-amber-50/40 hover:bg-amber-50/60 transition-colors">
 
-                {/* Mobile card layout */}
+                {/* Mobile card */}
                 <div className="flex md:hidden items-start gap-4 px-5 py-4">
                   <div className="w-11 h-11 rounded-full flex items-center justify-center text-sm font-extrabold shrink-0 mt-0.5 bg-amber-100 text-amber-600 border-2 border-dashed border-amber-300">
                     {getInitials(invite.full_name)}
@@ -339,8 +487,8 @@ export function TeamPage() {
                   </div>
                 </div>
 
-                {/* Desktop row layout */}
-                <div className="hidden md:grid grid-cols-[1fr_130px_1fr_130px_160px] gap-4 px-8 py-5 items-center">
+                {/* Desktop row */}
+                <div className="hidden md:grid grid-cols-[1fr_130px_1fr_130px_180px] gap-4 px-8 py-5 items-center">
                   <div className="flex items-center gap-4">
                     <div className="w-11 h-11 rounded-full flex items-center justify-center text-sm font-extrabold shrink-0 bg-amber-100 text-amber-600 border-2 border-dashed border-amber-300">
                       {getInitials(invite.full_name)}
@@ -396,6 +544,11 @@ export function TeamPage() {
             </p>
           </div>
         </div>
+      )}
+
+      {/* Schedule modal */}
+      {scheduleTarget && (
+        <ScheduleModal member={scheduleTarget} onClose={() => setScheduleTarget(null)} />
       )}
     </div>
   );
