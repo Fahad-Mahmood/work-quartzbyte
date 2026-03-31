@@ -5,7 +5,7 @@ import { Button } from "@/src/components/ui/button";
 import { Plus, Share, Filter, ChevronLeft, ChevronRight, Edit, Clock, CheckCircle, AlertCircle, PlayCircle, Download, BarChart2, Copy } from "lucide-react";
 import { useSchedule, Category, Status, Task } from "@/src/context/ScheduleContext";
 import { useUserProfile } from "@/src/context/ProfileContext";
-import { cn } from "@/src/lib/utils";
+import { cn, formatTimeSlot } from "@/src/lib/utils";
 import { TaskDrawer } from "@/src/components/TaskDrawer";
 
 const CATEGORIES: Category[] = ['Recording', 'Cold Calling', 'Learning', 'Internal'];
@@ -303,7 +303,7 @@ export function WeeklySchedulePage() {
                       <div className="flex items-center gap-3 text-on-surface-variant mb-4">
                         <div className="flex items-center gap-1">
                           <Clock className="h-3 w-3" />
-                          <span className="text-[11px] font-medium">{task.time}</span>
+                          <span className="text-[11px] font-medium">{formatTimeSlot(task.time)}</span>
                         </div>
                       </div>
                       <button className={cn("w-full py-1.5 text-[10px] font-bold rounded-lg transition-colors flex items-center justify-center gap-2", statColor)}>
@@ -356,7 +356,7 @@ export function WeeklySchedulePage() {
                       </td>
                       <td className="px-8 py-6 font-semibold text-sm">{task.name}</td>
                       <td className="px-8 py-6 text-on-surface-variant text-sm">{day.label}</td>
-                      <td className="px-8 py-6 text-right font-mono text-xs">{task.time}</td>
+                      <td className="px-8 py-6 text-right font-mono text-xs">{formatTimeSlot(task.time)}</td>
                       <td className="px-8 py-6 text-right">
                         <span className={cn("px-3 py-1 rounded-full text-[10px] font-bold uppercase", statColor)}>
                           {task.status}

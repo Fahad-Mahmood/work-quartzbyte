@@ -49,18 +49,19 @@ export function TaskDrawer({ isOpen, onClose, weekDays, initialDate, task, taskD
   // Pick today if it's in the current week, otherwise fall back to first weekday
   const defaultDate = weekDays.find(d => d.id === todayStr)?.id ?? weekDays[0]?.id ?? '';
 
-  const [title, setTitle]               = useState('');
-  const [category, setCategory]         = useState(PREDEFINED_CATEGORIES[0]);
-  const [isCustom, setIsCustom]         = useState(false);
-  const [customCat, setCustomCat]       = useState('');
-  const [status, setStatus]             = useState<Status>('Pending');
-  const [assignedTo, setAssignedTo]     = useState(currentUserName);
-  const [selectedDate, setSelectedDate] = useState<string>(defaultDate);
-  const [timeStart, setTimeStart]       = useState('09:00');
-  const [timeEnd, setTimeEnd]           = useState('10:00');
-  const [notes, setNotes]               = useState('');
-  const [isSaving, setIsSaving]         = useState(false);
-  const [isDeleting, setIsDeleting]     = useState(false);
+  const [title, setTitle]                 = useState('');
+  const [category, setCategory]           = useState(PREDEFINED_CATEGORIES[0]);
+  const [isCustom, setIsCustom]           = useState(false);
+  const [customCat, setCustomCat]         = useState('');
+  const [status, setStatus]               = useState<Status>('Pending');
+  const [assignedTo, setAssignedTo]       = useState(currentUserName);
+  const [selectedDate, setSelectedDate]   = useState<string>(defaultDate);
+  const [selectedDates, setSelectedDates] = useState<string[]>([defaultDate]);
+  const [timeStart, setTimeStart]         = useState('09:00');
+  const [timeEnd, setTimeEnd]             = useState('10:00');
+  const [notes, setNotes]                 = useState('');
+  const [isSaving, setIsSaving]           = useState(false);
+  const [isDeleting, setIsDeleting]       = useState(false);
 
   // Reset / populate form when drawer opens
   useEffect(() => {
@@ -93,6 +94,7 @@ export function TaskDrawer({ isOpen, onClose, weekDays, initialDate, task, taskD
       setStatus('Pending');
       setAssignedTo(currentUserName);
       setSelectedDate(initialDate ?? defaultDate);
+      setSelectedDates([initialDate ?? defaultDate]);
       setTimeStart('09:00');
       setTimeEnd('10:00');
       setNotes('');
@@ -103,7 +105,8 @@ export function TaskDrawer({ isOpen, onClose, weekDays, initialDate, task, taskD
   const taskIdLabel = task ? `#LDR-${task.id.slice(-5).toUpperCase()}` : null;
 
   const handleSave = async () => {
-    if (!title.trim() || !selectedDate) return;
+    if (!title.trim()) return;
+    if (!isEdit && selectedDates.length === 0) return;
     setIsSaving(true);
     try {
       const timeSlot = `${timeStart} - ${timeEnd}`;
@@ -117,11 +120,11 @@ export function TaskDrawer({ isOpen, onClose, weekDays, initialDate, task, taskD
           notes,
         });
       } else {
-        await addTask(selectedDate, effectiveCategory, title, timeSlot, {
-          assignedTo,
-          notes,
-          status,
-        });
+        await Promise.all(
+          selectedDates.map(date =>
+            addTask(date, effectiveCategory, title, timeSlot, { assignedTo, notes, status })
+          )
+        );
       }
       onClose();
     } finally {
@@ -269,21 +272,52 @@ export function TaskDrawer({ isOpen, onClose, weekDays, initialDate, task, taskD
             </div>
           </div>
 
-          {/* Scheduled Day (add mode only) */}
+          {/* Scheduled Days (add mode only — multi-select) */}
           {!isEdit && (
             <div>
-              <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1.5">
-                Scheduled Day
-              </label>
-              <select
-                value={selectedDate}
-                onChange={e => setSelectedDate(e.target.value)}
-                className="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium text-slate-800 focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all"
-              >
-                {weekDays.map(d => (
-                  <option key={d.id} value={d.id}>{d.label}</option>
-                ))}
-              </select>
+              <div className="flex items-center justify-between mb-1.5">
+                <label className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                  Scheduled Days
+                </label>
+                <button
+                  type="button"
+                  onClick={() =>
+                    setSelectedDates(
+                      selectedDates.length === weekDays.length ? [] : weekDays.map(d => d.id)
+                    )
+                  }
+                  className="text-[10px] font-bold text-primary hover:underline"
+                >
+                  {selectedDates.length === weekDays.length ? 'Deselect All' : 'Select All'}
+                </button>
+              </div>
+              <div className="flex gap-2">
+                {weekDays.map(d => {
+                  const active = selectedDates.includes(d.id);
+                  return (
+                    <button
+                      key={d.id}
+                      type="button"
+                      onClick={() =>
+                        setSelectedDates(prev =>
+                          prev.includes(d.id) ? prev.filter(x => x !== d.id) : [...prev, d.id]
+                        )
+                      }
+                      className={cn(
+                        'flex-1 py-2 rounded-xl text-xs font-bold transition-all border',
+                        active
+                          ? 'bg-primary text-white border-primary shadow-sm'
+                          : 'bg-slate-50 text-slate-500 border-slate-200 hover:border-primary/40'
+                      )}
+                    >
+                      {d.label.slice(0, 3)}
+                    </button>
+                  );
+                })}
+              </div>
+              {selectedDates.length === 0 && (
+                <p className="text-[11px] text-red-500 mt-1">Select at least one day.</p>
+              )}
             </div>
           )}
 
@@ -347,7 +381,7 @@ export function TaskDrawer({ isOpen, onClose, weekDays, initialDate, task, taskD
             </button>
             <button
               onClick={handleSave}
-              disabled={isSaving || !title.trim() || (!isEdit && !selectedDate)}
+              disabled={isSaving || !title.trim() || (!isEdit && selectedDates.length === 0)}
               className="px-5 py-2 bg-primary text-white text-sm font-bold rounded-xl hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {isSaving ? 'Saving…' : isEdit ? 'Save Changes' : 'Add Task'}

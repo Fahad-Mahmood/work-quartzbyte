@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { usePageTitle } from "../hooks/usePageTitle";
 import { startOfWeek, addDays, format, addDays as addD } from "date-fns";
 import { ChevronLeft, ChevronRight, ChevronDown, Save, CheckCircle2 } from "lucide-react";
-import { cn } from "../lib/utils";
+import { cn, formatTimeSlot } from "../lib/utils";
 import { useSchedule, Status } from "../context/ScheduleContext";
 
 const PAGE_SIZE = 10;

@@ -4,7 +4,7 @@ import { supabase } from '@/src/lib/supabase';
 import { useAuth } from '@/src/context/AuthContext';
 import { useUserProfile } from '@/src/context/ProfileContext';
 import { usePageTitle } from '@/src/hooks/usePageTitle';
-import { cn } from '@/src/lib/utils';
+import { cn, formatTimeSlot } from '@/src/lib/utils';
 import { startOfWeek, addDays, format, addWeeks } from 'date-fns';
 
 interface Member {
@@ -165,7 +165,7 @@ function ScheduleModal({ member, onClose }: { member: Member; onClose: () => voi
                         tasks.map(task => (
                           <div key={task.id} className="bg-surface-container rounded-xl p-3 space-y-1.5">
                             <p className="text-xs font-bold text-on-surface leading-snug">{task.name}</p>
-                            <p className="text-[10px] text-on-surface-variant">{task.time_slot}</p>
+                            <p className="text-[10px] text-on-surface-variant">{formatTimeSlot(task.time_slot)}</p>
                             <div className="flex items-center justify-between gap-1 flex-wrap">
                               <span className={cn('px-1.5 py-0.5 rounded text-[9px] font-extrabold uppercase tracking-wider', CAT_COLORS[task.category] ?? 'bg-slate-100 text-slate-600')}>
                                 {task.category}
