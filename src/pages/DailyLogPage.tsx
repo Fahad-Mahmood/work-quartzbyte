@@ -36,7 +36,6 @@ interface TaskRowProps {
 function TaskRow({ task, planned, savedActual, savedStatus, onCommitActual, onStatusChange }: TaskRowProps) {
   const [localActual, setLocalActual] = useState(savedActual);
 
-  // Sync if the saved value changes externally (e.g. day switch)
   useEffect(() => { setLocalActual(savedActual); }, [savedActual]);
 
   const actualNum = Number(localActual);
@@ -54,52 +53,49 @@ function TaskRow({ task, planned, savedActual, savedStatus, onCommitActual, onSt
   })();
 
   return (
-    <div className="grid grid-cols-[1fr_130px_90px_90px_70px_130px] gap-4 px-8 py-5 items-center hover:bg-surface-container-high/50 transition-colors group">
-      {/* Task name + notes */}
-      <div>
-        <p className="font-bold text-on-surface text-sm leading-snug">{task.name}</p>
-        {task.notes && <p className="text-[11px] text-on-surface-variant mt-0.5">{task.notes}</p>}
-      </div>
-
-      {/* Category badge */}
-      <div className="flex justify-center">
-        <span className={cn("px-2.5 py-1 rounded-full text-[9px] font-extrabold uppercase tracking-wider", catBadgeColor)}>
-          {task.category.toUpperCase()}
-        </span>
-      </div>
-
-      {/* Planned */}
-      <div className="text-center font-semibold text-sm text-on-surface">{planned}</div>
-
-      {/* Actual — local state only, flush on blur */}
-      <div className="flex justify-center">
-        <input
-          type="number"
-          min="0"
-          value={localActual}
-          onChange={e => setLocalActual(e.target.value)}
-          onBlur={() => onCommitActual(task.id, localActual)}
-          placeholder="—"
-          className="w-16 h-9 text-center text-sm font-bold bg-surface-container border border-outline-variant/30 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/40 transition-all text-on-surface placeholder:text-on-surface-variant/40"
-        />
-      </div>
-
-      {/* Diff */}
-      <div className="text-center">
-        {diff === null ? (
-          <span className="text-on-surface-variant/40 text-sm font-bold">0</span>
-        ) : diff === 0 ? (
-          <span className="text-on-surface-variant text-sm font-bold">0</span>
-        ) : diff > 0 ? (
-          <span className="text-red-500 font-bold text-sm">+{diff}</span>
-        ) : (
-          <span className="text-green-600 font-bold text-sm">{diff}</span>
-        )}
-      </div>
-
-      {/* Status dropdown */}
-      <div className="flex justify-center">
-        <div className="relative">
+    <>
+      {/* Mobile card layout */}
+      <div className="flex md:hidden flex-col gap-3 px-4 py-4 hover:bg-surface-container-high/50 transition-colors">
+        <div className="flex items-start justify-between gap-2">
+          <div className="flex-1 min-w-0">
+            <p className="font-bold text-on-surface text-sm leading-snug">{task.name}</p>
+            {task.notes && <p className="text-[11px] text-on-surface-variant mt-0.5">{task.notes}</p>}
+          </div>
+          <span className={cn("px-2 py-0.5 rounded-full text-[9px] font-extrabold uppercase tracking-wider shrink-0", catBadgeColor)}>
+            {task.category.toUpperCase()}
+          </span>
+        </div>
+        <div className="grid grid-cols-3 gap-2">
+          <div className="bg-surface-container rounded-xl px-3 py-2 text-center">
+            <p className="text-[9px] font-bold uppercase tracking-wider text-on-surface-variant mb-0.5">Planned</p>
+            <p className="text-sm font-bold text-on-surface">{planned}m</p>
+          </div>
+          <div className="bg-surface-container rounded-xl px-3 py-2 text-center">
+            <p className="text-[9px] font-bold uppercase tracking-wider text-on-surface-variant mb-0.5">Actual</p>
+            <input
+              type="number"
+              min="0"
+              value={localActual}
+              onChange={e => setLocalActual(e.target.value)}
+              onBlur={() => onCommitActual(task.id, localActual)}
+              placeholder="—"
+              className="w-full text-center text-sm font-bold bg-transparent focus:outline-none text-on-surface placeholder:text-on-surface-variant/40"
+            />
+          </div>
+          <div className="bg-surface-container rounded-xl px-3 py-2 text-center">
+            <p className="text-[9px] font-bold uppercase tracking-wider text-on-surface-variant mb-0.5">Diff</p>
+            {diff === null ? (
+              <span className="text-on-surface-variant/40 text-sm font-bold">—</span>
+            ) : diff === 0 ? (
+              <span className="text-on-surface-variant text-sm font-bold">0</span>
+            ) : diff > 0 ? (
+              <span className="text-red-500 font-bold text-sm">+{diff}</span>
+            ) : (
+              <span className="text-green-600 font-bold text-sm">{diff}</span>
+            )}
+          </div>
+        </div>
+        <div className="relative self-start">
           <select
             value={savedStatus}
             onChange={e => onStatusChange(task.id, e.target.value)}
@@ -113,7 +109,58 @@ function TaskRow({ task, planned, savedActual, savedStatus, onCommitActual, onSt
           <ChevronDown className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 h-3 w-3 opacity-60" />
         </div>
       </div>
-    </div>
+
+      {/* Desktop row layout */}
+      <div className="hidden md:grid grid-cols-[1fr_130px_90px_90px_70px_130px] gap-4 px-8 py-5 items-center hover:bg-surface-container-high/50 transition-colors group">
+        <div>
+          <p className="font-bold text-on-surface text-sm leading-snug">{task.name}</p>
+          {task.notes && <p className="text-[11px] text-on-surface-variant mt-0.5">{task.notes}</p>}
+        </div>
+        <div className="flex justify-center">
+          <span className={cn("px-2.5 py-1 rounded-full text-[9px] font-extrabold uppercase tracking-wider", catBadgeColor)}>
+            {task.category.toUpperCase()}
+          </span>
+        </div>
+        <div className="text-center font-semibold text-sm text-on-surface">{planned}</div>
+        <div className="flex justify-center">
+          <input
+            type="number"
+            min="0"
+            value={localActual}
+            onChange={e => setLocalActual(e.target.value)}
+            onBlur={() => onCommitActual(task.id, localActual)}
+            placeholder="—"
+            className="w-16 h-9 text-center text-sm font-bold bg-surface-container border border-outline-variant/30 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/40 transition-all text-on-surface placeholder:text-on-surface-variant/40"
+          />
+        </div>
+        <div className="text-center">
+          {diff === null ? (
+            <span className="text-on-surface-variant/40 text-sm font-bold">0</span>
+          ) : diff === 0 ? (
+            <span className="text-on-surface-variant text-sm font-bold">0</span>
+          ) : diff > 0 ? (
+            <span className="text-red-500 font-bold text-sm">+{diff}</span>
+          ) : (
+            <span className="text-green-600 font-bold text-sm">{diff}</span>
+          )}
+        </div>
+        <div className="flex justify-center">
+          <div className="relative">
+            <select
+              value={savedStatus}
+              onChange={e => onStatusChange(task.id, e.target.value)}
+              className={cn(
+                "appearance-none pl-3 pr-7 py-1.5 rounded-xl text-xs font-bold border cursor-pointer focus:outline-none focus:ring-2 focus:ring-primary/30 transition-all",
+                STATUS_STYLES[savedStatus] ?? STATUS_STYLES["Pending"]
+              )}
+            >
+              {STATUSES.map(s => <option key={s} value={s}>{s}</option>)}
+            </select>
+            <ChevronDown className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 h-3 w-3 opacity-60" />
+          </div>
+        </div>
+      </div>
+    </>
   );
 }
 
@@ -144,10 +191,8 @@ export function DailyLogPage() {
   const tasks = getTasksForDate(selectedDay);
   const logs = getLogsForDate(selectedDay);
 
-  // Reset visible count when day changes
   useEffect(() => { setVisibleCount(PAGE_SIZE); }, [selectedDay]);
 
-  // Infinite scroll via IntersectionObserver
   const loadMore = useCallback(() => {
     setVisibleCount(prev => Math.min(prev + PAGE_SIZE, tasks.length));
   }, [tasks.length]);
@@ -165,7 +210,6 @@ export function DailyLogPage() {
 
   const visibleTasks = tasks.slice(0, visibleCount);
 
-  // Totals
   const plannedTotal = tasks.reduce((sum, t) => sum + parsePlannedMins(t.time), 0);
   const actualTotal  = tasks.reduce((sum, t) => {
     const val = Number(logs[t.id]?.actual);
@@ -210,10 +254,10 @@ export function DailyLogPage() {
   }
 
   return (
-    <div className="flex flex-col gap-8 max-w-[1100px] mx-auto animate-in fade-in duration-500 pb-20">
+    <div className="flex flex-col gap-6 max-w-[1100px] mx-auto animate-in fade-in duration-500 pb-20">
 
       {/* Header */}
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-4">
         <div>
           <h1 className="text-3xl font-headline font-extrabold text-on-surface tracking-tight mb-1">Task Log</h1>
           <p className="text-on-surface-variant text-sm font-medium">
@@ -222,23 +266,23 @@ export function DailyLogPage() {
           </p>
         </div>
 
-        {/* Planned / Actual totals */}
-        <div className="flex items-stretch rounded-2xl overflow-hidden border border-outline-variant/20 shadow-sm bg-surface-container-lowest">
-          <div className="px-8 py-4 text-center">
+        {/* Totals */}
+        <div className="flex items-stretch rounded-2xl overflow-hidden border border-outline-variant/20 shadow-sm bg-surface-container-lowest w-full sm:w-auto">
+          <div className="flex-1 sm:flex-none px-6 sm:px-8 py-3 sm:py-4 text-center">
             <p className="text-[9px] font-bold uppercase tracking-[0.15em] text-on-surface-variant mb-1">Planned Total</p>
-            <p className="text-3xl font-headline font-extrabold text-on-surface">{plannedTotal}m</p>
+            <p className="text-2xl sm:text-3xl font-headline font-extrabold text-on-surface">{plannedTotal}m</p>
           </div>
           <div className="w-px bg-primary/30 my-3" />
-          <div className="px-8 py-4 text-center">
+          <div className="flex-1 sm:flex-none px-6 sm:px-8 py-3 sm:py-4 text-center">
             <p className="text-[9px] font-bold uppercase tracking-[0.15em] text-on-surface-variant mb-1">Actual Total</p>
-            <p className="text-3xl font-headline font-extrabold text-primary">{actualTotal}m</p>
+            <p className="text-2xl sm:text-3xl font-headline font-extrabold text-primary">{actualTotal}m</p>
           </div>
         </div>
       </div>
 
       {/* Day Selector */}
-      <div className="flex items-center gap-3">
-        <div className="flex items-center gap-1 text-on-surface-variant bg-surface-container px-2 py-1 rounded-lg">
+      <div className="flex items-center gap-2 sm:gap-3">
+        <div className="flex items-center gap-1 text-on-surface-variant bg-surface-container px-2 py-1 rounded-lg shrink-0">
           <button onClick={() => navigateDay(-1)} className="hover:text-primary p-0.5">
             <ChevronLeft className="h-4 w-4" />
           </button>
@@ -246,13 +290,13 @@ export function DailyLogPage() {
             <ChevronRight className="h-4 w-4" />
           </button>
         </div>
-        <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide">
+        <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide flex-1">
           {weekDays.map(day => (
             <button
               key={day.id}
               onClick={() => setSelectedDay(day.id)}
               className={cn(
-                "flex flex-col items-center justify-center min-w-[88px] px-4 py-2.5 rounded-xl transition-all border text-center",
+                "flex flex-col items-center justify-center min-w-[72px] sm:min-w-[88px] px-3 sm:px-4 py-2 sm:py-2.5 rounded-xl transition-all border text-center shrink-0",
                 selectedDay === day.id
                   ? "bg-primary text-white border-primary shadow-md"
                   : "bg-surface-container-lowest text-on-surface-variant border-outline-variant/20 hover:border-primary/30 hover:bg-surface-container-low"
@@ -261,7 +305,7 @@ export function DailyLogPage() {
               <span className={cn("text-[9px] font-bold uppercase tracking-widest", selectedDay === day.id ? "text-primary-container/80" : "text-on-surface-variant/60")}>
                 {day.shortLabel}
               </span>
-              <span className="text-base font-headline font-extrabold mt-0.5">{day.dateStr}</span>
+              <span className="text-sm sm:text-base font-headline font-extrabold mt-0.5">{day.dateStr}</span>
             </button>
           ))}
         </div>
@@ -275,8 +319,8 @@ export function DailyLogPage() {
         </div>
       ) : (
         <div className="bg-surface-container-lowest rounded-2xl shadow-sm border border-outline-variant/10 overflow-hidden">
-          {/* Table Header */}
-          <div className="grid grid-cols-[1fr_130px_90px_90px_70px_130px] gap-4 px-8 py-3 bg-surface-container border-b border-outline-variant/10">
+          {/* Desktop table header */}
+          <div className="hidden md:grid grid-cols-[1fr_130px_90px_90px_70px_130px] gap-4 px-8 py-3 bg-surface-container border-b border-outline-variant/10">
             <span className="text-[10px] font-bold uppercase tracking-widest text-on-surface-variant">Task Description</span>
             <span className="text-[10px] font-bold uppercase tracking-widest text-on-surface-variant text-center">Category</span>
             <span className="text-[10px] font-bold uppercase tracking-widest text-on-surface-variant text-center">Planned<br />(Mins)</span>
@@ -285,7 +329,6 @@ export function DailyLogPage() {
             <span className="text-[10px] font-bold uppercase tracking-widest text-on-surface-variant text-center">Status</span>
           </div>
 
-          {/* Rows */}
           <div className="divide-y divide-outline-variant/10">
             {visibleTasks.map(task => (
               <TaskRow
@@ -300,16 +343,15 @@ export function DailyLogPage() {
             ))}
           </div>
 
-          {/* Infinite scroll sentinel */}
           <div ref={sentinelRef} className="h-1" />
 
           {/* Footer */}
-          <div className="flex items-center justify-between px-8 py-4 border-t border-outline-variant/10 bg-surface-container-lowest/60">
+          <div className="flex items-center justify-between px-4 sm:px-8 py-4 border-t border-outline-variant/10 bg-surface-container-lowest/60 gap-3">
             <p className="text-xs text-on-surface-variant font-medium">
               Showing <span className="font-bold text-on-surface">{visibleTasks.length}</span> of{" "}
               <span className="font-bold text-on-surface">{tasks.length}</span> daily tasks
             </p>
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-3 shrink-0">
               {savedBanner && (
                 <span className="flex items-center gap-1.5 text-xs text-green-600 font-bold animate-in fade-in duration-300">
                   <CheckCircle2 className="h-3.5 w-3.5" /> Saved
@@ -318,7 +360,7 @@ export function DailyLogPage() {
               <button
                 onClick={handleSave}
                 disabled={isSaving}
-                className="px-5 py-2 bg-on-surface text-surface text-sm font-bold rounded-xl hover:opacity-90 transition-all shadow-md disabled:opacity-50 flex items-center gap-2"
+                className="px-4 sm:px-5 py-2 bg-on-surface text-surface text-sm font-bold rounded-xl hover:opacity-90 transition-all shadow-md disabled:opacity-50 flex items-center gap-2"
               >
                 <Save className="h-4 w-4" />
                 {isSaving ? "Saving…" : "Save Log"}
