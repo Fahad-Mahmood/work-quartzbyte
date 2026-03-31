@@ -56,23 +56,36 @@ Deno.serve(async (req) => {
       });
     }
 
+    const normalizedEmail = email.trim().toLowerCase();
+
+    // If a pending (unconfirmed) user already exists, delete them so re-invite sends a fresh email
+    const { data: existingProfile } = await adminClient
+      .from('work_profiles')
+      .select('user_id')
+      .eq('email', normalizedEmail)
+      .maybeSingle();
+
+    if (existingProfile?.user_id) {
+      // Remove the stale profile row and auth user so inviteUserByEmail works fresh
+      await adminClient.from('work_profiles').delete().eq('user_id', existingProfile.user_id);
+      await adminClient.auth.admin.deleteUser(existingProfile.user_id);
+    }
+
     // Send invite email — Supabase sends a "Set your password" link
     const { data: inviteData, error: inviteError } = await adminClient.auth.admin.inviteUserByEmail(
-      email,
+      normalizedEmail,
       {
         data: { full_name, job_title, role: role ?? 'member' },
         redirectTo: `${Deno.env.get('SITE_URL') ?? 'https://work.quartzbytee.com'}/auth`,
       },
     );
 
-    if (inviteError && !inviteError.message.includes('already been registered')) {
-      throw inviteError;
-    }
+    if (inviteError) throw inviteError;
 
     // Upsert invitation record
     const { error: dbError } = await adminClient.from('work_invitations').upsert(
       {
-        email: email.trim().toLowerCase(),
+        email: normalizedEmail,
         full_name: full_name.trim(),
         job_title,
         role: role ?? 'member',
@@ -91,7 +104,7 @@ Deno.serve(async (req) => {
           full_name: full_name.trim(),
           job_title,
           role: role ?? 'member',
-          email: email.trim().toLowerCase(),
+          email: normalizedEmail,
         },
         { onConflict: 'user_id' },
       );
