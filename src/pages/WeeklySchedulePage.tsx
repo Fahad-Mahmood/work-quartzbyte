@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { usePageTitle } from "@/src/hooks/usePageTitle";
 import { startOfWeek, addDays, addWeeks, format } from "date-fns";
 import { Button } from "@/src/components/ui/button";
@@ -19,10 +19,34 @@ export function WeeklySchedulePage() {
 
   const [weekOffset, setWeekOffset] = useState(0);
   const [isCopying, setIsCopying]   = useState(false);
+  const [dayWindowStart, setDayWindowStart] = useState(0);
+
+  const getResponsiveWindow = () => {
+    if (typeof window === 'undefined') return 5;
+    if (window.innerWidth < 640) return 1;
+    if (window.innerWidth < 768) return 2;
+    if (window.innerWidth < 1024) return 3;
+    return 5;
+  };
+  const [WINDOW, setWINDOW] = useState(getResponsiveWindow);
+
+  useEffect(() => {
+    const handler = () => {
+      const next = getResponsiveWindow();
+      setWINDOW(next);
+      setDayWindowStart(prev => Math.min(prev, 7 - next));
+    };
+    window.addEventListener('resize', handler);
+    return () => window.removeEventListener('resize', handler);
+  }, []);
+
+  const shiftWindow = (dir: 1 | -1) => {
+    setDayWindowStart(prev => Math.max(0, Math.min(7 - WINDOW, prev + dir)));
+  };
 
   const start = addWeeks(startOfWeek(today, { weekStartsOn: 1 }), weekOffset);
 
-  const weekDays = Array.from({ length: 5 }).map((_, i) => {
+  const weekDays = Array.from({ length: 7 }).map((_, i) => {
     const date = addDays(start, i);
     return {
       id: format(date, 'yyyy-MM-dd'),
@@ -31,6 +55,10 @@ export function WeeklySchedulePage() {
       dateStr: format(date, 'MMM d'),
     };
   });
+
+  const visibleDays = weekDays.slice(dayWindowStart, dayWindowStart + WINDOW);
+  const canShiftLeft  = dayWindowStart > 0;
+  const canShiftRight = dayWindowStart + WINDOW < 7;
 
   const [filterCategory, setFilterCategory] = useState<Category | 'All'>('All');
   const [filterStatus, setFilterStatus] = useState<Status | 'All Statuses'>('All Statuses');
@@ -55,7 +83,12 @@ export function WeeklySchedulePage() {
     setDrawerOpen(true);
   };
 
-  const dateRangeStr = `${format(start, 'MMM d')} - ${format(addDays(start, 4), 'd, yyyy')}`;
+  const dateRangeStr = `${format(start, 'MMM d')} - ${format(addDays(start, 6), 'd, yyyy')}`;
+
+  const handleWeekOffset = (delta: number) => {
+    setWeekOffset((w: number) => w + delta);
+    setDayWindowStart(0);
+  };
 
   const handleCopyToNextWeek = async () => {
     setIsCopying(true);
@@ -71,7 +104,7 @@ export function WeeklySchedulePage() {
           });
         }
       }
-      setWeekOffset((w: number) => w + 1);
+      handleWeekOffset(1);
     } finally {
       setIsCopying(false);
     }
@@ -185,9 +218,9 @@ export function WeeklySchedulePage() {
             {/* Week nav — shown inline on desktop, below on mobile */}
             <div className="hidden sm:flex items-center gap-4 mt-1">
               <div className="flex items-center gap-1 text-on-surface-variant bg-surface-container px-2 py-1 rounded-md">
-                <button onClick={() => setWeekOffset((w: number) => w - 1)} className="hover:text-primary"><ChevronLeft className="h-4 w-4" /></button>
+                <button onClick={() => handleWeekOffset(-1)} className="hover:text-primary"><ChevronLeft className="h-4 w-4" /></button>
                 <span className="text-sm font-semibold mx-1">{dateRangeStr}</span>
-                <button onClick={() => setWeekOffset((w: number) => w + 1)} className="hover:text-primary"><ChevronRight className="h-4 w-4" /></button>
+                <button onClick={() => handleWeekOffset(1)} className="hover:text-primary"><ChevronRight className="h-4 w-4" /></button>
               </div>
               {weekOffset !== 0 && (
                 <button onClick={() => setWeekOffset(0)} className="text-xs text-primary font-semibold hover:underline">Today</button>
@@ -200,9 +233,9 @@ export function WeeklySchedulePage() {
         {/* Week nav — mobile only */}
         <div className="flex sm:hidden items-center gap-2">
           <div className="flex items-center gap-1 text-on-surface-variant bg-surface-container px-2 py-1 rounded-md flex-1 justify-center">
-            <button onClick={() => setWeekOffset((w: number) => w - 1)} className="hover:text-primary"><ChevronLeft className="h-4 w-4" /></button>
+            <button onClick={() => handleWeekOffset(-1)} className="hover:text-primary"><ChevronLeft className="h-4 w-4" /></button>
             <span className="text-sm font-semibold mx-1">{dateRangeStr}</span>
-            <button onClick={() => setWeekOffset((w: number) => w + 1)} className="hover:text-primary"><ChevronRight className="h-4 w-4" /></button>
+            <button onClick={() => handleWeekOffset(1)} className="hover:text-primary"><ChevronRight className="h-4 w-4" /></button>
           </div>
           {weekOffset !== 0 && (
             <button onClick={() => setWeekOffset(0)} className="text-xs text-primary font-semibold hover:underline px-2">Today</button>
@@ -277,8 +310,49 @@ export function WeeklySchedulePage() {
       </div>
 
       {/* Bento Grid Calendar Layout */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-4 sm:gap-6">
-        {weekDays.map(day => {
+      <div className="relative">
+        {/* Day window nav — shown when there are days to shift to */}
+        {canShiftLeft && (
+          <button
+            onClick={() => shiftWindow(-1)}
+            className="absolute -left-5 top-8 z-10 w-9 h-9 rounded-full bg-surface-container-lowest border border-outline-variant/20 shadow-md flex items-center justify-center text-on-surface-variant hover:text-primary hover:border-primary/30 transition-all"
+          >
+            <ChevronLeft className="h-4 w-4" />
+          </button>
+        )}
+        {canShiftRight && (
+          <button
+            onClick={() => shiftWindow(1)}
+            className="absolute -right-5 top-8 z-10 w-9 h-9 rounded-full bg-surface-container-lowest border border-outline-variant/20 shadow-md flex items-center justify-center text-on-surface-variant hover:text-primary hover:border-primary/30 transition-all"
+          >
+            <ChevronRight className="h-4 w-4" />
+          </button>
+        )}
+
+        {/* Day dots indicator */}
+        <div className="flex justify-center gap-1.5 mb-4">
+          {weekDays.map((d, i) => (
+            <button
+              key={d.id}
+              onClick={() => setDayWindowStart(Math.min(i, 7 - WINDOW))}
+              className={cn(
+                'h-1.5 rounded-full transition-all',
+                i >= dayWindowStart && i < dayWindowStart + WINDOW
+                  ? 'w-5 bg-primary'
+                  : 'w-1.5 bg-outline-variant/40 hover:bg-primary/40'
+              )}
+              title={d.label}
+            />
+          ))}
+        </div>
+
+      <div className={cn("grid gap-4 sm:gap-6", {
+        'grid-cols-1': WINDOW === 1,
+        'grid-cols-2': WINDOW === 2,
+        'grid-cols-3': WINDOW === 3,
+        'grid-cols-5': WINDOW === 5,
+      })}>
+        {visibleDays.map(day => {
           const dayTasks = getTasksForDate(day.id).filter(t => 
             (filterCategory === 'All' || t.category === filterCategory) &&
             (filterStatus === 'All Statuses' || t.status === filterStatus)
@@ -333,6 +407,7 @@ export function WeeklySchedulePage() {
             </div>
           );
         })}
+      </div>
       </div>
 
       {/* Detailed Table View — desktop only */}

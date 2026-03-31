@@ -73,7 +73,7 @@ function ScheduleModal({ member, onClose }: { member: Member; onClose: () => voi
 
   const today = new Date();
   const start = addWeeks(startOfWeek(today, { weekStartsOn: 1 }), weekOffset);
-  const weekDays = Array.from({ length: 5 }).map((_, i) => {
+  const weekDays = Array.from({ length: 7 }).map((_, i) => {
     const date = addDays(start, i);
     return { id: format(date, 'yyyy-MM-dd'), label: format(date, 'EEE'), dateStr: format(date, 'MMM d') };
   });

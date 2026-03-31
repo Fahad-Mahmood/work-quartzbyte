@@ -171,7 +171,7 @@ export function DailyLogPage() {
   const today = new Date();
   const start = startOfWeek(today, { weekStartsOn: 1 });
 
-  const weekDays = Array.from({ length: 5 }).map((_, i) => {
+  const weekDays = Array.from({ length: 7 }).map((_, i) => {
     const date = addDays(start, i);
     return {
       id: format(date, "yyyy-MM-dd"),
