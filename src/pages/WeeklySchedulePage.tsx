@@ -166,82 +166,105 @@ export function WeeklySchedulePage() {
   return (
     <div className="flex flex-col gap-8 max-w-[1400px] mx-auto animate-in fade-in duration-500 pb-20">
       {/* Header Section */}
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
-        <div className="flex items-center gap-6">
-          <div className="relative">
-            <div className="w-14 h-14 rounded-2xl bg-primary/10 flex items-center justify-center text-xl font-bold text-primary ring-4 ring-primary-fixed/30">
+      <div className="flex flex-col gap-4">
+        {/* Top row: avatar + title + name badge */}
+        <div className="flex items-center gap-4">
+          <div className="relative shrink-0">
+            <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-2xl bg-primary/10 flex items-center justify-center text-lg sm:text-xl font-bold text-primary ring-4 ring-primary-fixed/30">
               {(profile?.full_name || '?').split(' ').map((w: string) => w[0]).join('').slice(0, 2).toUpperCase()}
             </div>
-            <div className="absolute -bottom-1 -right-1 bg-green-500 w-4 h-4 rounded-full border-2 border-white"></div>
+            <div className="absolute -bottom-1 -right-1 bg-green-500 w-3.5 h-3.5 rounded-full border-2 border-white"></div>
           </div>
-          <div>
-            <div className="flex items-center gap-2 mb-1">
-              <h2 className="text-3xl font-headline font-extrabold text-on-surface tracking-tight">Weekly Schedule</h2>
-              <span className="bg-primary-fixed text-on-primary-fixed-variant px-2.5 py-0.5 rounded-lg text-[10px] font-bold tracking-widest uppercase">{profile?.full_name || 'My Schedule'}</span>
+          <div className="min-w-0">
+            <div className="flex items-center gap-2 flex-wrap">
+              <h2 className="text-2xl sm:text-3xl font-headline font-extrabold text-on-surface tracking-tight">Weekly Schedule</h2>
+              <span className="bg-primary-fixed text-on-primary-fixed-variant px-2.5 py-0.5 rounded-lg text-[10px] font-bold tracking-widest uppercase">
+                {profile?.full_name || 'My Schedule'}
+              </span>
             </div>
-            <div className="flex items-center gap-4">
+            {/* Week nav — shown inline on desktop, below on mobile */}
+            <div className="hidden sm:flex items-center gap-4 mt-1">
               <div className="flex items-center gap-1 text-on-surface-variant bg-surface-container px-2 py-1 rounded-md">
                 <button onClick={() => setWeekOffset((w: number) => w - 1)} className="hover:text-primary"><ChevronLeft className="h-4 w-4" /></button>
                 <span className="text-sm font-semibold mx-1">{dateRangeStr}</span>
                 <button onClick={() => setWeekOffset((w: number) => w + 1)} className="hover:text-primary"><ChevronRight className="h-4 w-4" /></button>
               </div>
               {weekOffset !== 0 && (
-                <button onClick={() => setWeekOffset(0)} className="text-xs text-primary font-semibold hover:underline">
-                  Today
-                </button>
+                <button onClick={() => setWeekOffset(0)} className="text-xs text-primary font-semibold hover:underline">Today</button>
               )}
-              <span className="text-xs text-on-surface-variant font-medium">Standard Hours • 40h/week</span>
+              <span className="text-xs text-on-surface-variant font-medium hidden md:inline">Standard Hours • 40h/week</span>
             </div>
           </div>
         </div>
-        <div className="flex gap-3">
+
+        {/* Week nav — mobile only */}
+        <div className="flex sm:hidden items-center gap-2">
+          <div className="flex items-center gap-1 text-on-surface-variant bg-surface-container px-2 py-1 rounded-md flex-1 justify-center">
+            <button onClick={() => setWeekOffset((w: number) => w - 1)} className="hover:text-primary"><ChevronLeft className="h-4 w-4" /></button>
+            <span className="text-sm font-semibold mx-1">{dateRangeStr}</span>
+            <button onClick={() => setWeekOffset((w: number) => w + 1)} className="hover:text-primary"><ChevronRight className="h-4 w-4" /></button>
+          </div>
+          {weekOffset !== 0 && (
+            <button onClick={() => setWeekOffset(0)} className="text-xs text-primary font-semibold hover:underline px-2">Today</button>
+          )}
+        </div>
+
+        {/* Action buttons */}
+        <div className="flex gap-2 sm:gap-3">
           <Button
             onClick={() => openAddDrawer()}
-            className="px-6 py-2.5 bg-primary text-white rounded-xl text-sm font-bold flex items-center gap-2 hover:bg-primary-container transition-all shadow-lg shadow-primary/20"
+            className="flex-1 sm:flex-none px-4 sm:px-6 py-2.5 bg-primary text-white rounded-xl text-sm font-bold flex items-center justify-center gap-2 hover:bg-primary-container transition-all shadow-lg shadow-primary/20"
           >
-            <Plus className="h-5 w-5" /> Add New Task
+            <Plus className="h-4 w-4 sm:h-5 sm:w-5" />
+            <span className="hidden sm:inline">Add New Task</span>
+            <span className="sm:hidden">Add Task</span>
           </Button>
           <Button
             variant="outline"
             onClick={handleCopyToNextWeek}
             disabled={isCopying || totalTasks.length === 0}
-            className="px-4 py-2.5 bg-surface-container-lowest border border-outline-variant/20 rounded-xl hover:bg-surface-container-low transition-colors flex items-center gap-2 text-sm font-bold disabled:opacity-50"
-            title="Copy this week's tasks to next week"
+            className="flex-1 sm:flex-none px-3 sm:px-4 py-2.5 bg-surface-container-lowest border border-outline-variant/20 rounded-xl hover:bg-surface-container-low transition-colors flex items-center justify-center gap-2 text-sm font-bold disabled:opacity-50"
           >
             <Copy className="h-4 w-4" />
-            {isCopying ? 'Copying…' : 'Copy to Next Week'}
+            <span className="hidden sm:inline">{isCopying ? 'Copying…' : 'Copy to Next Week'}</span>
+            <span className="sm:hidden">{isCopying ? '…' : 'Copy'}</span>
           </Button>
-          <Button variant="outline" className="p-2.5 bg-surface-container-lowest border border-outline-variant/20 rounded-xl hover:bg-surface-container-low transition-colors">
+          <Button variant="outline" className="p-2.5 bg-surface-container-lowest border border-outline-variant/20 rounded-xl hover:bg-surface-container-low transition-colors shrink-0">
             <Share className="h-5 w-5" />
           </Button>
         </div>
       </div>
 
       {/* Quick Filter Bar */}
-      <div className="bg-white p-4 rounded-2xl shadow-sm border border-outline-variant/10 flex flex-wrap items-center gap-6">
-        <div className="flex items-center gap-2">
-          <Filter className="h-5 w-5 text-on-surface-variant" />
-          <span className="text-xs font-bold uppercase tracking-wider text-on-surface-variant">Quick Filter</span>
+      <div className="bg-white p-4 rounded-2xl shadow-sm border border-outline-variant/10 flex flex-col gap-3">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Filter className="h-4 w-4 text-on-surface-variant" />
+            <span className="text-xs font-bold uppercase tracking-wider text-on-surface-variant">Quick Filter</span>
+          </div>
+          <button
+            onClick={() => { setFilterCategory('All'); setFilterStatus('All Statuses'); }}
+            className="text-primary text-xs font-bold hover:underline"
+          >Clear All</button>
         </div>
-        <div className="h-6 w-[1px] bg-outline-variant/30"></div>
-        <div className="flex items-center gap-3">
-          <span className="text-xs font-medium text-on-surface-variant">Category:</span>
-          <div className="flex gap-2">
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="text-xs font-medium text-on-surface-variant shrink-0">Category:</span>
+          <div className="flex gap-1.5 flex-wrap">
             <button
               onClick={() => setFilterCategory('All')}
-              className={cn("px-3 py-1 rounded-full text-[11px] font-semibold transition-colors", filterCategory === 'All' ? "bg-primary text-white" : "bg-surface-container-high text-on-surface-variant hover:bg-primary-fixed hover:text-on-primary-fixed")}
+              className={cn("px-3 py-1 rounded-full text-[11px] font-semibold transition-colors", filterCategory === 'All' ? "bg-primary text-white" : "bg-surface-container-high text-on-surface-variant")}
             >All</button>
             {CATEGORIES.map(cat => (
               <button
                 key={cat}
                 onClick={() => setFilterCategory(cat)}
-                className={cn("px-3 py-1 rounded-full text-[11px] font-semibold transition-colors", filterCategory === cat ? "bg-primary text-white" : "bg-surface-container-high text-on-surface-variant hover:bg-primary-fixed hover:text-on-primary-fixed")}
+                className={cn("px-3 py-1 rounded-full text-[11px] font-semibold transition-colors", filterCategory === cat ? "bg-primary text-white" : "bg-surface-container-high text-on-surface-variant")}
               >{cat}</button>
             ))}
           </div>
         </div>
-        <div className="flex items-center gap-3">
-          <span className="text-xs font-medium text-on-surface-variant">Status:</span>
+        <div className="flex items-center gap-2">
+          <span className="text-xs font-medium text-on-surface-variant shrink-0">Status:</span>
           <select
             className="text-xs font-semibold bg-surface-container border-none rounded-lg focus:ring-0 py-1.5 pl-3 pr-8 text-on-surface"
             value={filterStatus}
@@ -251,16 +274,10 @@ export function WeeklySchedulePage() {
             {STATUSES.map(s => <option key={s} value={s}>{s}</option>)}
           </select>
         </div>
-        <div className="ml-auto">
-          <button
-            onClick={() => { setFilterCategory('All'); setFilterStatus('All Statuses'); }}
-            className="text-primary text-xs font-bold hover:underline"
-          >Clear All</button>
-        </div>
       </div>
 
       {/* Bento Grid Calendar Layout */}
-      <div className="grid grid-cols-1 md:grid-cols-5 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-4 sm:gap-6">
         {weekDays.map(day => {
           const dayTasks = getTasksForDate(day.id).filter(t => 
             (filterCategory === 'All' || t.category === filterCategory) &&
@@ -318,8 +335,8 @@ export function WeeklySchedulePage() {
         })}
       </div>
 
-      {/* Detailed Table View */}
-      <div className="mt-12">
+      {/* Detailed Table View — desktop only */}
+      <div className="hidden md:block mt-12">
         <div className="flex justify-between items-center mb-8">
           <h3 className="font-headline font-bold text-2xl text-on-surface">Detailed Ledger View</h3>
           <Button variant="outline" className="px-4 py-2 bg-surface-container-lowest border border-outline-variant/20 rounded-lg text-sm font-semibold flex items-center gap-2 hover:bg-surface-container-low transition-colors">
@@ -379,8 +396,8 @@ export function WeeklySchedulePage() {
         </div>
       </div>
 
-      {/* Insights Section */}
-      <div className="mt-12 grid grid-cols-1 md:grid-cols-3 gap-8">
+      {/* Insights Section — desktop only */}
+      <div className="hidden md:grid mt-12 grid-cols-1 md:grid-cols-3 gap-8">
         <div className="bg-primary text-white p-8 rounded-2xl relative overflow-hidden group shadow-xl shadow-primary/20">
           <div className="absolute top-0 right-0 w-32 h-32 bg-white/5 rounded-full -mr-10 -mt-10 group-hover:scale-110 transition-transform"></div>
           <span className="text-[10px] font-bold uppercase tracking-[0.2em] opacity-60">Total Hours</span>
