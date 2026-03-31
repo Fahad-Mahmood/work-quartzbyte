@@ -35,12 +35,10 @@ export function AuthPage() {
     const params = parseHashParams(window.location.hash);
     if (params.type === 'invite' && params.access_token) {
       setIsInviteFlow(true);
-      // Exchange the token so the user is "logged in" (but passwordless) — allows updateUser to work
       supabase.auth.setSession({
         access_token: params.access_token,
         refresh_token: params.refresh_token ?? '',
       });
-      // Clear the hash so it's not reprocessed on refresh
       window.history.replaceState(null, '', window.location.pathname);
     }
   }, []);
@@ -68,8 +66,24 @@ export function AuthPage() {
     setIsLoading(true);
     setError(null);
     try {
-      const { error } = await supabase.auth.updateUser({ password });
+      const { data: { user }, error } = await supabase.auth.updateUser({ password });
       if (error) throw error;
+
+      // Mark invitation as accepted and ensure work_profile email is set
+      if (user?.email) {
+        const email = user.email.toLowerCase();
+        await supabase
+          .from('work_invitations')
+          .update({ status: 'accepted' })
+          .eq('email', email);
+        // Ensure the pre-created work_profile has the email column populated
+        await supabase
+          .from('work_profiles')
+          .update({ email })
+          .eq('user_id', user.id)
+          .is('email', null);
+      }
+
       setInviteDone(true);
       setTimeout(() => navigate('/', { replace: true }), 2000);
     } catch (err: any) {
