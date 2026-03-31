@@ -382,7 +382,7 @@ export function WeeklySchedulePage() {
                       <div className={cn("absolute left-0 top-0 bottom-0 w-1.5", catColor.split(' ')[0])}></div>
                       <div className="flex justify-between items-start mb-2">
                         <span className={cn("text-[9px] font-bold uppercase tracking-tight", catColor.split(' ')[1])}>{task.category}</span>
-                        <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <div className="flex gap-1 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
                           <button
                             onClick={() => openEditDrawer(task, day.id)}
                             className="p-1 hover:bg-surface-container rounded-md text-on-surface-variant hover:text-primary transition-colors"
