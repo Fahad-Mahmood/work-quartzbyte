@@ -42,6 +42,7 @@ const STATUS_STYLES: Record<string, string> = {
   'In Progress':'bg-blue-100 text-blue-700',
   Pending:      'bg-surface-container-high text-on-surface-variant',
   Overdue:      'bg-red-100 text-red-500',
+  'N/A':        'bg-amber-100 text-amber-700',
 };
 
 const CAT_COLORS: Record<string, string> = {

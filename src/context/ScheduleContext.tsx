@@ -5,7 +5,7 @@ import { useAuth } from './AuthContext';
 
 // Category is now an open string so users can create custom ones
 export type Category = string;
-export type Status = 'Completed' | 'In Progress' | 'Pending' | 'Overdue';
+export type Status = 'Completed' | 'In Progress' | 'Pending' | 'Overdue' | 'N/A';
 
 export interface Task {
   id: string;

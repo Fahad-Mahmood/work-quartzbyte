@@ -12,9 +12,10 @@ const STATUS_STYLES: Record<string, string> = {
   "In Progress": "bg-blue-100 text-blue-700 border-blue-200",
   Pending:     "bg-surface-container-high text-on-surface-variant border-outline-variant/30",
   Overdue:     "bg-red-100 text-red-500 border-red-200",
+  "N/A":       "bg-amber-100 text-amber-700 border-amber-200",
 };
 
-const STATUSES: Status[] = ["Completed", "In Progress", "Pending", "Overdue"];
+const STATUSES: Status[] = ["Completed", "In Progress", "Pending", "Overdue", "N/A"];
 
 function parsePlannedMins(time: string): number {
   const parts = time.split(" - ");

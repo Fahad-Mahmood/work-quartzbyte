@@ -6,13 +6,14 @@ import { useAuth } from '@/src/context/AuthContext';
 import { format } from 'date-fns';
 
 const PREDEFINED_CATEGORIES = ['Recording', 'Cold Calling', 'Learning', 'Internal'];
-const STATUSES: Status[] = ['Pending', 'In Progress', 'Completed', 'Overdue'];
+const STATUSES: Status[] = ['Pending', 'In Progress', 'Completed', 'Overdue', 'N/A'];
 
 const STATUS_COLORS: Record<Status, string> = {
   'Pending':     'bg-slate-100 text-slate-600',
   'In Progress': 'bg-blue-100 text-blue-700',
   'Completed':   'bg-green-100 text-green-700',
   'Overdue':     'bg-red-100 text-red-600',
+  'N/A':         'bg-amber-100 text-amber-700',
 };
 
 interface WeekDay {

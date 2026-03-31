@@ -2,14 +2,14 @@ import { useState, useEffect } from "react";
 import { usePageTitle } from "@/src/hooks/usePageTitle";
 import { startOfWeek, addDays, addWeeks, format } from "date-fns";
 import { Button } from "@/src/components/ui/button";
-import { Plus, Share, Filter, ChevronLeft, ChevronRight, Edit, Clock, CheckCircle, AlertCircle, PlayCircle, Download, BarChart2, Copy } from "lucide-react";
+import { Plus, Share, Filter, ChevronLeft, ChevronRight, Edit, Clock, CheckCircle, AlertCircle, PlayCircle, Download, BarChart2, Copy, MinusCircle } from "lucide-react";
 import { useSchedule, Category, Status, Task } from "@/src/context/ScheduleContext";
 import { useUserProfile } from "@/src/context/ProfileContext";
 import { cn, formatTimeSlot } from "@/src/lib/utils";
 import { TaskDrawer } from "@/src/components/TaskDrawer";
 
 const CATEGORIES: Category[] = ['Recording', 'Cold Calling', 'Learning', 'Internal'];
-const STATUSES: Status[] = ['Completed', 'In Progress', 'Pending', 'Overdue'];
+const STATUSES: Status[] = ['Completed', 'In Progress', 'Pending', 'Overdue', 'N/A'];
 
 export function WeeklySchedulePage() {
   usePageTitle('Weekly Plan');
@@ -134,6 +134,7 @@ export function WeeklySchedulePage() {
       case 'In Progress': return 'bg-secondary-fixed text-on-secondary-container';
       case 'Overdue': return 'bg-error-container text-on-error-container';
       case 'Pending': return 'bg-surface-container-high text-on-surface-variant hover:bg-surface-variant';
+      case 'N/A':     return 'bg-amber-100 text-amber-700';
       default: return 'bg-slate-100 text-slate-500';
     }
   };
@@ -157,6 +158,7 @@ export function WeeklySchedulePage() {
       case 'In Progress': return <PlayCircle className="h-3 w-3" />;
       case 'Overdue': return <AlertCircle className="h-3 w-3" />;
       case 'Pending': return <Clock className="h-3 w-3" />;
+      case 'N/A':     return <MinusCircle className="h-3 w-3" />;
       default: return null;
     }
   };
