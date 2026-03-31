@@ -54,6 +54,7 @@ export function TeamPage() {
   const [sortByRole, setSortByRole] = useState(false);
   const [resendingId, setResendingId] = useState<string | null>(null);
   const [resentId, setResentId] = useState<string | null>(null);
+  const [resendError, setResendError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!supabase) { setIsLoading(false); return; }
@@ -78,6 +79,7 @@ export function TeamPage() {
   const handleResend = async (invite: PendingInvite) => {
     if (!supabase) return;
     setResendingId(invite.id);
+    setResendError(null);
     try {
       const res = await supabase.functions.invoke('invite-member', {
         body: {
@@ -88,10 +90,15 @@ export function TeamPage() {
           invited_by: invite.invited_by,
         },
       });
-      if (!res.error && !res.data?.error) {
+      const errMsg = res.error?.message ?? res.data?.error;
+      if (errMsg) {
+        setResendError(errMsg);
+      } else {
         setResentId(invite.id);
         setTimeout(() => setResentId(null), 3000);
       }
+    } catch (e: any) {
+      setResendError(e.message);
     } finally {
       setResendingId(null);
     }
@@ -167,6 +174,13 @@ export function TeamPage() {
           Sort by Role
         </button>
       </div>
+
+      {/* Resend error */}
+      {resendError && (
+        <div className="px-4 py-3 bg-error-container text-on-error-container text-sm font-medium rounded-xl">
+          Failed to resend invite: {resendError}
+        </div>
+      )}
 
       {/* Table */}
       {totalCount === 0 ? (
