@@ -70,6 +70,26 @@ function ScheduleModal({ member, onClose }: { member: Member; onClose: () => voi
   const [weekOffset, setWeekOffset] = useState(0);
   const [tasksByDate, setTasksByDate] = useState<Record<string, Task[]>>({});
   const [isLoading, setIsLoading] = useState(true);
+  const [dayWindowStart, setDayWindowStart] = useState(0);
+
+  const getResponsiveWindow = () => {
+    if (typeof window === 'undefined') return 5;
+    if (window.innerWidth < 640) return 1;
+    if (window.innerWidth < 768) return 2;
+    if (window.innerWidth < 1024) return 4;
+    return 7;
+  };
+  const [WINDOW, setWINDOW] = useState(getResponsiveWindow);
+
+  useEffect(() => {
+    const handler = () => {
+      const next = getResponsiveWindow();
+      setWINDOW(next);
+      setDayWindowStart(prev => Math.min(prev, 7 - next));
+    };
+    window.addEventListener('resize', handler);
+    return () => window.removeEventListener('resize', handler);
+  }, []);
 
   const today = new Date();
   const start = addWeeks(startOfWeek(today, { weekStartsOn: 1 }), weekOffset);
@@ -77,6 +97,10 @@ function ScheduleModal({ member, onClose }: { member: Member; onClose: () => voi
     const date = addDays(start, i);
     return { id: format(date, 'yyyy-MM-dd'), label: format(date, 'EEE'), dateStr: format(date, 'MMM d') };
   });
+
+  const visibleDays = weekDays.slice(dayWindowStart, dayWindowStart + WINDOW);
+  const canShiftLeft  = dayWindowStart > 0;
+  const canShiftRight = dayWindowStart + WINDOW < 7;
 
   useEffect(() => {
     if (!supabase) { setIsLoading(false); return; }
@@ -100,7 +124,14 @@ function ScheduleModal({ member, onClose }: { member: Member; onClose: () => voi
   }, [member.user_id, weekOffset]);
 
   const totalTasks = Object.values(tasksByDate).flat().length;
-  const dateRangeStr = `${format(start, 'MMM d')} – ${format(addDays(start, 4), 'MMM d, yyyy')}`;
+  const dateRangeStr = `${format(start, 'MMM d')} – ${format(addDays(start, 6), 'MMM d, yyyy')}`;
+
+  const gridColsClass = {
+    1: 'grid-cols-1',
+    2: 'grid-cols-2',
+    4: 'grid-cols-4',
+    7: 'grid-cols-7',
+  }[WINDOW] ?? 'grid-cols-4';
 
   return (
     <>
@@ -122,11 +153,11 @@ function ScheduleModal({ member, onClose }: { member: Member; onClose: () => voi
             <div className="flex items-center gap-3">
               {/* Week nav */}
               <div className="flex items-center gap-1 bg-surface-container px-2 py-1 rounded-lg text-on-surface-variant text-xs font-bold">
-                <button onClick={() => setWeekOffset(o => o - 1)} className="hover:text-primary p-0.5">
+                <button onClick={() => { setWeekOffset(o => o - 1); setDayWindowStart(0); }} className="hover:text-primary p-0.5">
                   <ChevronLeft className="h-4 w-4" />
                 </button>
-                <span className="px-2">{dateRangeStr}</span>
-                <button onClick={() => setWeekOffset(o => o + 1)} className="hover:text-primary p-0.5">
+                <span className="px-1 sm:px-2 text-[10px] sm:text-xs">{dateRangeStr}</span>
+                <button onClick={() => { setWeekOffset(o => o + 1); setDayWindowStart(0); }} className="hover:text-primary p-0.5">
                   <ChevronRight className="h-4 w-4" />
                 </button>
               </div>
@@ -137,7 +168,7 @@ function ScheduleModal({ member, onClose }: { member: Member; onClose: () => voi
           </div>
 
           {/* Schedule content */}
-          <div className="overflow-y-auto flex-1 p-6">
+          <div className="overflow-y-auto flex-1 p-4 sm:p-6">
             {isLoading ? (
               <div className="flex items-center justify-center py-16">
                 <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -149,37 +180,74 @@ function ScheduleModal({ member, onClose }: { member: Member; onClose: () => voi
                 <p className="text-sm text-on-surface-variant mt-1">{member.full_name} has no scheduled tasks for this period.</p>
               </div>
             ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
-                {weekDays.map(day => {
-                  const tasks = tasksByDate[day.id] ?? [];
-                  return (
-                    <div key={day.id} className="flex flex-col gap-2">
-                      <div className="text-center pb-2 border-b border-outline-variant/10">
-                        <p className="text-[10px] font-bold uppercase tracking-widest text-on-surface-variant">{day.label}</p>
-                        <p className="text-sm font-extrabold text-on-surface font-headline">{day.dateStr}</p>
-                        <p className="text-[10px] text-on-surface-variant/60 mt-0.5">{tasks.length} task{tasks.length !== 1 ? 's' : ''}</p>
-                      </div>
-                      {tasks.length === 0 ? (
-                        <p className="text-xs text-on-surface-variant/40 text-center py-4">—</p>
-                      ) : (
-                        tasks.map(task => (
-                          <div key={task.id} className="bg-surface-container rounded-xl p-3 space-y-1.5">
-                            <p className="text-xs font-bold text-on-surface leading-snug">{task.name}</p>
-                            <p className="text-[10px] text-on-surface-variant">{formatTimeSlot(task.time_slot)}</p>
-                            <div className="flex items-center justify-between gap-1 flex-wrap">
-                              <span className={cn('px-1.5 py-0.5 rounded text-[9px] font-extrabold uppercase tracking-wider', CAT_COLORS[task.category] ?? 'bg-slate-100 text-slate-600')}>
-                                {task.category}
-                              </span>
-                              <span className={cn('px-1.5 py-0.5 rounded text-[9px] font-bold', STATUS_STYLES[task.status] ?? STATUS_STYLES['Pending'])}>
-                                {task.status}
-                              </span>
-                            </div>
-                          </div>
-                        ))
+              <div className="relative">
+                {/* Day window arrows */}
+                {canShiftLeft && (
+                  <button
+                    onClick={() => setDayWindowStart(p => Math.max(0, p - 1))}
+                    className="absolute -left-3 top-6 z-10 w-7 h-7 rounded-full bg-surface-container-lowest border border-outline-variant/20 shadow flex items-center justify-center text-on-surface-variant hover:text-primary transition-all"
+                  >
+                    <ChevronLeft className="h-3.5 w-3.5" />
+                  </button>
+                )}
+                {canShiftRight && (
+                  <button
+                    onClick={() => setDayWindowStart(p => Math.min(7 - WINDOW, p + 1))}
+                    className="absolute -right-3 top-6 z-10 w-7 h-7 rounded-full bg-surface-container-lowest border border-outline-variant/20 shadow flex items-center justify-center text-on-surface-variant hover:text-primary transition-all"
+                  >
+                    <ChevronRight className="h-3.5 w-3.5" />
+                  </button>
+                )}
+
+                {/* Dot indicators */}
+                <div className="flex justify-center gap-1.5 mb-4">
+                  {weekDays.map((d, i) => (
+                    <button
+                      key={d.id}
+                      onClick={() => setDayWindowStart(Math.min(i, 7 - WINDOW))}
+                      className={cn(
+                        'h-1.5 rounded-full transition-all',
+                        i >= dayWindowStart && i < dayWindowStart + WINDOW
+                          ? 'w-4 bg-primary'
+                          : 'w-1.5 bg-outline-variant/40 hover:bg-primary/40'
                       )}
-                    </div>
-                  );
-                })}
+                      title={d.label}
+                    />
+                  ))}
+                </div>
+
+                <div className={cn('grid gap-3', gridColsClass)}>
+                  {visibleDays.map(day => {
+                    const tasks = tasksByDate[day.id] ?? [];
+                    return (
+                      <div key={day.id} className="flex flex-col gap-2">
+                        <div className="text-center pb-2 border-b border-outline-variant/10">
+                          <p className="text-[10px] font-bold uppercase tracking-widest text-on-surface-variant">{day.label}</p>
+                          <p className="text-sm font-extrabold text-on-surface font-headline">{day.dateStr}</p>
+                          <p className="text-[10px] text-on-surface-variant/60 mt-0.5">{tasks.length} task{tasks.length !== 1 ? 's' : ''}</p>
+                        </div>
+                        {tasks.length === 0 ? (
+                          <p className="text-xs text-on-surface-variant/40 text-center py-4">—</p>
+                        ) : (
+                          tasks.map(task => (
+                            <div key={task.id} className="bg-surface-container rounded-xl p-3 space-y-1.5">
+                              <p className="text-xs font-bold text-on-surface leading-snug">{task.name}</p>
+                              <p className="text-[10px] text-on-surface-variant">{formatTimeSlot(task.time_slot)}</p>
+                              <div className="flex items-center justify-between gap-1 flex-wrap">
+                                <span className={cn('px-1.5 py-0.5 rounded text-[9px] font-extrabold uppercase tracking-wider', CAT_COLORS[task.category] ?? 'bg-slate-100 text-slate-600')}>
+                                  {task.category}
+                                </span>
+                                <span className={cn('px-1.5 py-0.5 rounded text-[9px] font-bold', STATUS_STYLES[task.status] ?? STATUS_STYLES['Pending'])}>
+                                  {task.status}
+                                </span>
+                              </div>
+                            </div>
+                          ))
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
               </div>
             )}
           </div>
