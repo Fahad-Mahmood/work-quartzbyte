@@ -58,17 +58,20 @@ Deno.serve(async (req) => {
 
     const normalizedEmail = email.trim().toLowerCase();
 
-    // If a pending (unconfirmed) user already exists, delete them so re-invite sends a fresh email
-    const { data: existingProfile } = await adminClient
-      .from('work_profiles')
-      .select('user_id')
-      .eq('email', normalizedEmail)
-      .maybeSingle();
+    // If a pending (unconfirmed) auth user already exists, delete them so re-invite sends a fresh email
+    // Only delete if the user has NOT confirmed their email yet
+    const { data: { users } } = await adminClient.auth.admin.listUsers();
+    const existingAuthUser = users?.find(u => u.email?.toLowerCase() === normalizedEmail);
 
-    if (existingProfile?.user_id) {
-      // Remove the stale profile row and auth user so inviteUserByEmail works fresh
-      await adminClient.from('work_profiles').delete().eq('user_id', existingProfile.user_id);
-      await adminClient.auth.admin.deleteUser(existingProfile.user_id);
+    if (existingAuthUser && !existingAuthUser.email_confirmed_at) {
+      // User never confirmed — safe to delete and re-invite
+      await adminClient.from('work_profiles').delete().eq('user_id', existingAuthUser.id);
+      await adminClient.auth.admin.deleteUser(existingAuthUser.id);
+    } else if (existingAuthUser?.email_confirmed_at) {
+      // User already accepted — just return success, no need to re-invite
+      return new Response(JSON.stringify({ success: true, already_active: true }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
     }
 
     // Send invite email — Supabase sends a "Set your password" link

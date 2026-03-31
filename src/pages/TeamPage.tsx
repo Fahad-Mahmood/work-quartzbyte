@@ -220,11 +220,14 @@ export function TeamPage() {
       const profilesList = (profilesRes.data as Member[]) ?? [];
       const invitesList = (invitesRes.data as PendingInvite[]) ?? [];
 
-      const activeEmails = new Set(profilesList.map(m => m.email?.toLowerCase()).filter(Boolean));
-      const filteredInvites = invitesList.filter(i => !activeEmails.has(i.email?.toLowerCase()));
+      // Pending emails = invitations not yet accepted
+      const pendingEmails = new Set(invitesList.map(i => i.email?.toLowerCase()));
 
-      setMembers(profilesList);
-      setPending(filteredInvites);
+      // Active = has a profile AND no pending invitation
+      const activeMembers = profilesList.filter(m => !pendingEmails.has(m.email?.toLowerCase()));
+
+      setMembers(activeMembers);
+      setPending(invitesList);
       setIsLoading(false);
     });
   }, []);
