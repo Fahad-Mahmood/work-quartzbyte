@@ -4,7 +4,7 @@ import { supabase } from "../lib/supabase";
 import { useAuth } from "../context/AuthContext";
 import {
   ChevronLeft, ChevronDown, Link as LinkIcon, Save, Film, FileText,
-  ShieldCheck, Video, Package, Plus, Trash2, Cloud
+  ShieldCheck, Video, Package, Plus, Trash2, Cloud, Eye, CheckCircle2, XCircle, ExternalLink
 } from "lucide-react";
 import { cn } from "../lib/utils";
 
@@ -83,10 +83,13 @@ export function VideoTrackerPage() {
   const [title, setTitle]                   = useState('');
   const [category, setCategory]             = useState('Social Media Shorts');
   const [creator, setCreator]               = useState('');
+  const [editor, setEditor]                 = useState('');
   const [reviewer, setReviewer]             = useState('');
   const [driveLink, setDriveLink]           = useState('');
   const [canvaLink, setCanvaLink]           = useState('');
   const [referenceLink, setReferenceLink]   = useState('');
+  const [refViewCount, setRefViewCount]     = useState('');
+  const [refVerified, setRefVerified]       = useState<boolean | null>(null);
   const [script, setScript]                 = useState('');
   const [status, setStatus]                 = useState<VideoStatus>('Drafting');
   const [checklist, setChecklist]           = useState<boolean[]>(CHECKLIST.map(() => false));
@@ -123,11 +126,14 @@ export function VideoTrackerPage() {
         setTitle(data.title ?? '');
         setCategory(data.category ?? 'Social Media Shorts');
         setCreator(data.creator ?? '');
+        setEditor(data.editor ?? '');
         setReviewer(data.reviewer ?? '');
         setStatus((data.status as VideoStatus) ?? 'Drafting');
         setDriveLink(data.drive_link ?? '');
         setCanvaLink(data.canva_link ?? '');
         setReferenceLink(data.reference_link ?? '');
+        setRefViewCount(data.ref_view_count ?? '');
+        setRefVerified(data.ref_verified ?? null);
         setScript(data.script ?? '');
         setNotes(data.notes ?? '');
         setComments(data.comments ?? '');
@@ -160,10 +166,12 @@ export function VideoTrackerPage() {
     if (!supabase || !user || !id) return;
     setIsSaving(true);
     const { error } = await supabase.from('work_videos').update({
-      title, category, creator, reviewer, status,
+      title, category, creator, editor, reviewer, status,
       drive_link: driveLink,
       canva_link: canvaLink,
       reference_link: referenceLink,
+      ref_view_count: refViewCount,
+      ref_verified: refVerified,
       script,
       notes,
       comments,
@@ -299,12 +307,21 @@ export function VideoTrackerPage() {
               </select>
             </div>
             <div className="space-y-1.5">
-              <label className="text-[10px] font-bold uppercase tracking-widest text-on-surface-variant">Creator / Editor</label>
+              <label className="text-[10px] font-bold uppercase tracking-widest text-on-surface-variant">Content Creator</label>
               <MemberSelect
                 value={creator}
                 onChange={setCreator}
                 members={members}
                 placeholder="Select creator…"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <label className="text-[10px] font-bold uppercase tracking-widest text-on-surface-variant">Video Editor</label>
+              <MemberSelect
+                value={editor}
+                onChange={setEditor}
+                members={members}
+                placeholder="Select editor…"
               />
             </div>
             <div className="space-y-1.5">
@@ -346,7 +363,93 @@ export function VideoTrackerPage() {
           </div>
         </section>
 
-        {/* Section 2: Video Script */}
+        {/* Section 2: Reference Video Verification */}
+        <section className="bg-surface-container-lowest rounded-2xl shadow-sm border border-outline-variant/10 overflow-hidden">
+          <div className="bg-amber-500 px-8 py-4 flex items-center gap-3">
+            <Eye className="h-5 w-5 text-white" />
+            <h3 className="font-headline font-bold text-white uppercase tracking-wide">Reference Video Verification</h3>
+            <span className="ml-auto text-[10px] text-white/70 font-bold uppercase tracking-widest">Min. 500K Views Required</span>
+          </div>
+          <div className="p-8 space-y-6">
+            {/* Reference link display */}
+            {referenceLink ? (
+              <div className="flex items-center gap-3 p-4 bg-surface-container rounded-xl">
+                <Video className="h-4 w-4 text-amber-500 shrink-0" />
+                <a
+                  href={referenceLink}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-sm text-primary font-medium hover:underline truncate flex-1"
+                >
+                  {referenceLink}
+                </a>
+                <ExternalLink className="h-4 w-4 text-on-surface-variant/40 shrink-0" />
+              </div>
+            ) : (
+              <p className="text-sm text-on-surface-variant/50 italic">No reference link added yet — add one in Video Information above.</p>
+            )}
+
+            {/* View count input + result */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-end">
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-bold uppercase tracking-widest text-on-surface-variant">
+                  View Count (manually check & enter)
+                </label>
+                <div className="relative">
+                  <Eye className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-amber-400 pointer-events-none" />
+                  <input
+                    value={refViewCount}
+                    onChange={e => {
+                      setRefViewCount(e.target.value);
+                      const n = parseInt(e.target.value.replace(/,/g, ''), 10);
+                      setRefVerified(isNaN(n) ? null : n >= 500000);
+                    }}
+                    placeholder="e.g. 1200000"
+                    type="number"
+                    min="0"
+                    className="w-full bg-surface-container-low border-none focus:ring-2 focus:ring-amber-400/40 focus:bg-white rounded-xl py-3 pl-11 pr-4 text-sm font-medium text-on-surface outline-none transition-all"
+                  />
+                </div>
+                <p className="text-[10px] text-on-surface-variant/60 ml-1">Open the reference link, check the view count, and enter it here.</p>
+              </div>
+
+              <div className={cn(
+                'flex items-center gap-4 p-5 rounded-2xl border-2 transition-all',
+                refVerified === true  ? 'bg-green-50 border-green-200' :
+                refVerified === false ? 'bg-red-50 border-red-200' :
+                'bg-surface-container border-outline-variant/20'
+              )}>
+                {refVerified === true && (
+                  <>
+                    <CheckCircle2 className="h-8 w-8 text-green-500 shrink-0" />
+                    <div>
+                      <p className="font-bold text-green-700 text-sm">Verified ✓</p>
+                      <p className="text-xs text-green-600 mt-0.5">
+                        {parseInt(refViewCount).toLocaleString()} views — meets the 500K minimum.
+                      </p>
+                    </div>
+                  </>
+                )}
+                {refVerified === false && (
+                  <>
+                    <XCircle className="h-8 w-8 text-red-400 shrink-0" />
+                    <div>
+                      <p className="font-bold text-red-600 text-sm">Does Not Qualify</p>
+                      <p className="text-xs text-red-500 mt-0.5">
+                        {parseInt(refViewCount).toLocaleString()} views — needs 500K+. Choose a different reference.
+                      </p>
+                    </div>
+                  </>
+                )}
+                {refVerified === null && (
+                  <p className="text-sm text-on-surface-variant/50 italic">Enter the view count to verify eligibility.</p>
+                )}
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* Section 3: Video Script */}
         <section className="bg-surface-container-lowest rounded-2xl shadow-sm border border-outline-variant/10 overflow-hidden">
           <div className="bg-primary px-8 py-4 flex items-center justify-between">
             <div className="flex items-center gap-3">
