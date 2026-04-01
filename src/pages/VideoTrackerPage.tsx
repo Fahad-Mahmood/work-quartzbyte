@@ -225,7 +225,7 @@ export function VideoTrackerPage() {
             <button
               onClick={() => setShowStatusMenu(m => !m)}
               className={cn(
-                'flex items-center gap-2 pl-3 pr-3 py-2 rounded-xl text-xs font-bold border cursor-pointer transition-all select-none',
+                'flex items-center gap-2 pl-3 pr-3 py-2 rounded-xl text-xs font-bold border cursor-pointer transition-all select-none whitespace-nowrap',
                 STATUS_COLORS[status].pill
               )}
             >
@@ -236,7 +236,7 @@ export function VideoTrackerPage() {
             {showStatusMenu && (
               <>
                 <div className="fixed inset-0 z-40" onClick={() => setShowStatusMenu(false)} />
-                <div className="absolute right-0 top-full mt-2 z-50 bg-surface-container-lowest rounded-2xl shadow-xl border border-outline-variant/20 py-1.5 w-44 animate-in fade-in slide-in-from-top-1 duration-150">
+                <div className="absolute right-0 top-full mt-2 z-50 bg-surface-container-lowest rounded-2xl shadow-xl border border-outline-variant/20 py-1.5 w-52 animate-in fade-in slide-in-from-top-1 duration-150">
                   {STATUS_OPTIONS.map(s => (
                     <button
                       key={s}
