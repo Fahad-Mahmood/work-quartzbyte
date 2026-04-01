@@ -123,11 +123,16 @@ export function VideoTrackerPage() {
         setTitle(data.title ?? '');
         setCategory(data.category ?? 'Social Media Shorts');
         setCreator(data.creator ?? '');
+        setReviewer(data.reviewer ?? '');
         setStatus((data.status as VideoStatus) ?? 'Drafting');
         setDriveLink(data.drive_link ?? '');
         setCanvaLink(data.canva_link ?? '');
         setReferenceLink(data.reference_link ?? '');
+        setScript(data.script ?? '');
         setNotes(data.notes ?? '');
+        setComments(data.comments ?? '');
+        if (data.scenes?.length) setScenes(data.scenes);
+        if (data.checklist?.length) setChecklist(data.checklist);
       }
       setIsLoading(false);
     });
@@ -155,10 +160,15 @@ export function VideoTrackerPage() {
     if (!supabase || !user || !id) return;
     setIsSaving(true);
     await supabase.from('work_videos').update({
-      title, category, creator, status,
+      title, category, creator, reviewer, status,
       drive_link: driveLink,
       canva_link: canvaLink,
-      notes: script,
+      reference_link: referenceLink,
+      script,
+      notes,
+      comments,
+      scenes,
+      checklist,
       updated_at: new Date().toISOString(),
     }).eq('id', id);
     setIsSaving(false);
