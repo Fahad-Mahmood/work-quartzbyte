@@ -7,7 +7,7 @@ import { usePageTitle } from '@/src/hooks/usePageTitle';
 import { cn } from '@/src/lib/utils';
 import { formatDistanceToNow } from 'date-fns';
 
-export type VideoStatus = 'Drafting' | 'Scripting' | 'Recording' | 'Editing' | 'Reviewing' | 'Approved';
+export type VideoStatus = 'Drafting' | 'Scripting' | 'Script Review' | 'Recording' | 'Editing' | 'Editing Review' | 'Changes Requested' | 'Approved';
 
 export interface Video {
   id: string;
@@ -24,24 +24,28 @@ export interface Video {
   updated_at: string;
 }
 
-const STATUS_TABS: Array<VideoStatus | 'All'> = ['All', 'Drafting', 'Scripting', 'Recording', 'Editing', 'Reviewing', 'Approved'];
+const STATUS_TABS: Array<VideoStatus | 'All'> = ['All', 'Drafting', 'Scripting', 'Script Review', 'Recording', 'Editing', 'Editing Review', 'Changes Requested', 'Approved'];
 
 const STATUS_DOT: Record<VideoStatus, string> = {
-  Drafting:  'bg-on-surface-variant/50',
-  Scripting: 'bg-blue-400',
-  Recording: 'bg-primary',
-  Editing:   'bg-purple-400',
-  Reviewing: 'bg-amber-400',
-  Approved:  'bg-green-500',
+  Drafting:            'bg-on-surface-variant/50',
+  Scripting:           'bg-blue-400',
+  'Script Review':     'bg-amber-400',
+  Recording:           'bg-primary',
+  Editing:             'bg-purple-400',
+  'Editing Review':    'bg-orange-400',
+  'Changes Requested': 'bg-red-400',
+  Approved:            'bg-green-500',
 };
 
 const STATUS_TEXT: Record<VideoStatus, string> = {
-  Drafting:  'text-on-surface-variant',
-  Scripting: 'text-blue-600',
-  Recording: 'text-primary font-semibold',
-  Editing:   'text-purple-600 font-semibold',
-  Reviewing: 'text-amber-600',
-  Approved:  'text-green-600 font-semibold',
+  Drafting:            'text-on-surface-variant',
+  Scripting:           'text-blue-600',
+  'Script Review':     'text-amber-600',
+  Recording:           'text-primary font-semibold',
+  Editing:             'text-purple-600 font-semibold',
+  'Editing Review':    'text-orange-600',
+  'Changes Requested': 'text-red-600 font-semibold',
+  Approved:            'text-green-600 font-semibold',
 };
 
 function getInitials(name: string | null) {

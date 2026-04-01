@@ -8,7 +8,7 @@ import {
 } from "lucide-react";
 import { cn } from "../lib/utils";
 
-type VideoStatus = 'Drafting' | 'Scripting' | 'Recording' | 'Editing' | 'Reviewing' | 'Approved';
+type VideoStatus = 'Drafting' | 'Scripting' | 'Script Review' | 'Recording' | 'Editing' | 'Editing Review' | 'Changes Requested' | 'Approved';
 
 interface SceneRow {
   id: number;
@@ -28,15 +28,17 @@ const CHECKLIST = [
   "Total word count fits 30–60 sec when spoken aloud",
 ];
 
-const STATUS_OPTIONS: VideoStatus[] = ['Drafting', 'Scripting', 'Recording', 'Editing', 'Reviewing', 'Approved'];
+const STATUS_OPTIONS: VideoStatus[] = ['Drafting', 'Scripting', 'Script Review', 'Recording', 'Editing', 'Editing Review', 'Changes Requested', 'Approved'];
 
 const STATUS_COLORS: Record<VideoStatus, { pill: string; dot: string }> = {
-  Drafting:  { pill: 'bg-surface-container-high text-on-surface-variant border-outline-variant/30',  dot: 'bg-on-surface-variant/40' },
-  Scripting: { pill: 'bg-blue-50 text-blue-700 border-blue-200',    dot: 'bg-blue-500' },
-  Recording: { pill: 'bg-primary/10 text-primary border-primary/20', dot: 'bg-primary' },
-  Editing:   { pill: 'bg-purple-50 text-purple-700 border-purple-200', dot: 'bg-purple-500' },
-  Reviewing: { pill: 'bg-amber-50 text-amber-700 border-amber-200',  dot: 'bg-amber-500' },
-  Approved:  { pill: 'bg-green-50 text-green-700 border-green-200',  dot: 'bg-green-500' },
+  Drafting:            { pill: 'bg-surface-container-high text-on-surface-variant border-outline-variant/30', dot: 'bg-on-surface-variant/40' },
+  Scripting:           { pill: 'bg-blue-50 text-blue-700 border-blue-200',       dot: 'bg-blue-500' },
+  'Script Review':     { pill: 'bg-amber-50 text-amber-700 border-amber-200',    dot: 'bg-amber-500' },
+  Recording:           { pill: 'bg-primary/10 text-primary border-primary/20',   dot: 'bg-primary' },
+  Editing:             { pill: 'bg-purple-50 text-purple-700 border-purple-200', dot: 'bg-purple-500' },
+  'Editing Review':    { pill: 'bg-orange-50 text-orange-700 border-orange-200', dot: 'bg-orange-500' },
+  'Changes Requested': { pill: 'bg-red-50 text-red-700 border-red-200',          dot: 'bg-red-500' },
+  Approved:            { pill: 'bg-green-50 text-green-700 border-green-200',    dot: 'bg-green-500' },
 };
 
 function getInitials(name: string | null) {
