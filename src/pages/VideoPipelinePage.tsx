@@ -122,10 +122,10 @@ export function VideoPipelinePage() {
     <div className="flex flex-col gap-6 max-w-[1100px] mx-auto animate-in fade-in duration-500 pb-20">
 
       {/* Header */}
-      <div className="flex items-center justify-between gap-4">
-        <div>
-          <h1 className="text-3xl sm:text-4xl font-headline font-extrabold text-on-surface tracking-tight mb-1">Video Pipeline</h1>
-          <p className="text-on-surface-variant text-sm">
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <h1 className="text-2xl sm:text-4xl font-headline font-extrabold text-on-surface tracking-tight mb-1 leading-tight">Video Pipeline</h1>
+          <p className="text-on-surface-variant text-xs sm:text-sm">
             Tracking <span className="font-bold text-on-surface">{videos.length}</span> video{videos.length !== 1 ? 's' : ''} across all stages.
           </p>
         </div>
@@ -182,27 +182,27 @@ export function VideoPipelinePage() {
 
       {/* Stats */}
       <div className="grid grid-cols-3 gap-3 sm:gap-4">
-        <div className="bg-surface-container-lowest rounded-2xl border border-outline-variant/10 shadow-sm p-4 sm:p-6 flex items-center gap-3 sm:gap-4">
-          <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
-            <Film className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />
+        <div className="bg-surface-container-lowest rounded-2xl border border-outline-variant/10 shadow-sm p-3 sm:p-6 flex items-center gap-2 sm:gap-4">
+          <div className="hidden sm:flex w-12 h-12 rounded-xl bg-primary/10 items-center justify-center shrink-0">
+            <Film className="h-5 w-5 text-primary" />
           </div>
           <div>
             <p className="text-xl sm:text-2xl font-headline font-extrabold text-on-surface">{inProduction}</p>
             <p className="text-[10px] sm:text-xs text-on-surface-variant font-medium mt-0.5 leading-tight">In Production</p>
           </div>
         </div>
-        <div className="bg-surface-container-lowest rounded-2xl border border-outline-variant/10 shadow-sm p-4 sm:p-6 flex items-center gap-3 sm:gap-4">
-          <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-green-100 flex items-center justify-center shrink-0">
-            <CheckCircle2 className="h-4 w-4 sm:h-5 sm:w-5 text-green-600" />
+        <div className="bg-surface-container-lowest rounded-2xl border border-outline-variant/10 shadow-sm p-3 sm:p-6 flex items-center gap-2 sm:gap-4">
+          <div className="hidden sm:flex w-12 h-12 rounded-xl bg-green-100 items-center justify-center shrink-0">
+            <CheckCircle2 className="h-5 w-5 text-green-600" />
           </div>
           <div>
             <p className="text-xl sm:text-2xl font-headline font-extrabold text-on-surface">{approvedCount}</p>
             <p className="text-[10px] sm:text-xs text-on-surface-variant font-medium mt-0.5">Approved</p>
           </div>
         </div>
-        <div className="bg-surface-container-lowest rounded-2xl border border-outline-variant/10 shadow-sm p-4 sm:p-6 flex items-center gap-3 sm:gap-4">
-          <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-secondary-container flex items-center justify-center shrink-0">
-            <Clock className="h-4 w-4 sm:h-5 sm:w-5 text-secondary" />
+        <div className="bg-surface-container-lowest rounded-2xl border border-outline-variant/10 shadow-sm p-3 sm:p-6 flex items-center gap-2 sm:gap-4">
+          <div className="hidden sm:flex w-12 h-12 rounded-xl bg-secondary-container items-center justify-center shrink-0">
+            <Clock className="h-5 w-5 text-secondary" />
           </div>
           <div>
             <p className="text-xl sm:text-2xl font-headline font-extrabold text-on-surface">{videos.length}</p>
@@ -212,7 +212,7 @@ export function VideoPipelinePage() {
       </div>
 
       {/* Status filter tabs */}
-      <div className="flex items-center gap-1 border-b border-outline-variant/20 overflow-x-auto scrollbar-hide pb-0">
+      <div className="flex items-center gap-1 border-b border-outline-variant/20 overflow-x-auto scrollbar-hide pb-0 -mx-4 px-4 sm:mx-0 sm:px-0">
         {STATUS_TABS.map(tab => (
           <button
             key={tab}
