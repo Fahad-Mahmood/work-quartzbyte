@@ -100,7 +100,7 @@ export const ScheduleProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       }
 
       try {
-        const { data: tasksData, error: tasksError } = await supabase.from('work_tasks').select('*');
+        const { data: tasksData, error: tasksError } = await supabase.from('work_tasks').select('*').eq('user_id', user.id);
         if (tasksError) throw tasksError;
 
         const { data: logsData, error: logsError } = await supabase.from('work_task_logs').select('*');

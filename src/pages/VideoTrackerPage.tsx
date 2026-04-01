@@ -159,7 +159,7 @@ export function VideoTrackerPage() {
   const handleSave = async () => {
     if (!supabase || !user || !id) return;
     setIsSaving(true);
-    await supabase.from('work_videos').update({
+    const { error } = await supabase.from('work_videos').update({
       title, category, creator, reviewer, status,
       drive_link: driveLink,
       canva_link: canvaLink,
@@ -172,7 +172,11 @@ export function VideoTrackerPage() {
       updated_at: new Date().toISOString(),
     }).eq('id', id);
     setIsSaving(false);
-    setSavedAt(new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }));
+    if (error) {
+      alert(`Save failed: ${error.message}`);
+    } else {
+      setSavedAt(new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }));
+    }
   };
 
   if (isLoading) {
